@@ -2,7 +2,7 @@
 ##     SIBS Personality Change         ##
 ##          Linh Nguyen                ##
 ##      Created: 29-Nov-2020           ##
-##    Last updated: 29-Nov-2020        ##
+##    Last updated: 30-Nov-2020        ##
 #########################################
 
 # META ==================================
@@ -15,7 +15,7 @@ library(ufs) #reliability
 renv::restore() #package version control
 
 # > Data ----
-dict <- read.csv(file = "./Data/Dictionary.csv", fileEncoding="UTF-8-BOM") #dictionary
+dict <- read.csv(file = "./Data/Dictionary.csv") #dictionary
 
 data <- read.csv(file = './Data/DF_LINH_MPQ.csv', sep = "") %>% 
   select(ID, IDYRFAM, IDSEX, IDAB, IDFAMAB, BDAY, 
@@ -206,25 +206,9 @@ TR_3 <- dict %>%
   pull(variable)
 
 ## reorder items within list so reversed items are not first
-AC_1 <- AC_1[c(5,1:4,6:12)]
-AC_2 <- AC_2[c(5,1:4,6:12)]
-AC_3 <- AC_3[c(5,1:4,6:12)]
-
-AG_1 <- AG_1[c(6,1:5,7:12)]
-AG_2 <- AG_2[c(6,1:5,7:12)]
-AG_3 <- AG_3[c(6,1:5,7:12)]
-
-CON_1 <- CON_1[c(6,1:5,7:12)]
-CON_2 <- CON_2[c(6,1:5,7:12)]
-CON_3 <- CON_3[c(6,1:5,7:12)]
-
-SP_1 <- SP_1[c(3,1:2,4:12)]
-SP_2 <- SP_2[c(3,1:2,4:12)]
-SP_3 <- SP_3[c(3,1:2,4:12)]
-
-TR_1 <- TR_1[c(4,1:3,5:12)]
-TR_2 <- TR_2[c(4,1:3,5:12)]
-TR_3 <- TR_3[c(4,1:3,5:12)]
+HA_1 <- HA_1[c(4,1:3,5:12)]
+HA_2 <- HA_2[c(4,1:3,5:12)]
+HA_3 <- HA_3[c(4,1:3,5:12)]
 
 ## create aggregated variables 
 data$AC_1 <- data %>% 
