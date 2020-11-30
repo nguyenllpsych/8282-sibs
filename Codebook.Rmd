@@ -322,5 +322,5 @@ codebook_data <- data %>% #remove IDs and dates
 metadata(codebook_data)$name <- "SIBS dataset for EPSY 8282 longitudinal personality project"
 metadata(codebook_data)$description <- "Select data from the Sibling Interaction and Behavior Study (Minnesota Center For Twin and Family Research https://mctfr.psych.umn.edu) to be used in the sibling personality change project"
 metadata(codebook_data)$temporalCoverage <- "1998 - 2020" 
-codebook(codebook_data)
+codebook(codebook_data, metadata_json = F, metadata_table = F)
 ```
