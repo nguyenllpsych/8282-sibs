@@ -29,7 +29,10 @@ pander::panderOptions("table.split.table", Inf)
 library(tidyverse)
 library(codebook)
 library(renv)
-library(future)
+library(future) #reliability
+library(ufs) #reliability
+library(GGally) #reliability
+library(GPArotation) #reliability
 
 renv::restore() #package version control
 
