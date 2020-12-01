@@ -2,7 +2,7 @@
 ##     SIBS Personality Change         ##
 ##          Linh Nguyen                ##
 ##      Created: 29-Nov-2020           ##
-##    Last updated: 30-Nov-2020        ##
+##    Last updated: 01-Dec-2020        ##
 #########################################
 
 # META ==================================
@@ -12,8 +12,16 @@ library(codebook)
 library(renv)
 library(future) #reliability
 library(ufs) #reliability
-library(reshape)
+library(reshape2)
 library(cowplot) #plotgrid
+library(haven) #export spss
+library(lmerTest)
+library(lme4)
+library(nlme)
+library(lavaan)
+
+set.seed(8282)
+options(scipen = 999)
 
 renv::restore() #package version control
 
@@ -62,15 +70,39 @@ data <- read.csv(file = './Data/DF_LINH_MPQ.csv', sep = "") %>%
 data[data == -98 | data == -97 | data == -96 | data == -95 | data == -94] <- NA
 
 ## Duplicated 
-data[duplicated(data$ID),] %>% pull(ID)
+data[duplicated(data$ID),] %>% pull(IDYRFAM)
 
 ### id 8387000 same data different FU3 date
 data %>% filter(ID == 8387000) %>%  select(starts_with("FU3"))
 ### id 8679404 slightly different data
 data %>% filter(ID == 8679404) %>%  select(starts_with("FU3"))
 
-### delete both
-data <- data %>% filter(ID != 8387000 & ID != 8679404)
+### delete both sets of dyads
+data <- data %>% filter(IDYRFAM != 83870 & IDYRFAM != 86794)
+
+## person dummy var 
+data$P <- rep(c(1:2))
+
+## young/old dummy var
+yo <- data %>% select(IDYRFAM, BDAY, P) %>% 
+  mutate(BDAY = as.character(BDAY))
+
+yo <- dcast(yo, IDYRFAM ~ P, value.var = c("BDAY"))
+yo <- yo %>% mutate(`1` = as.Date(`1`),
+                    `2` = as.Date(`2`))
+yo <- yo %>% mutate(older = ifelse(`1`<`2`, "P1", "P2")) %>% 
+  select(IDYRFAM, older)
+
+data <- merge(data,yo)
+data <- data %>% 
+  mutate(young = ifelse(P == 1 & older == "P2" | P == 2 & older == "P1", 1, 0),
+         old = ifelse(P == 1  & older == "P1" | P == 2 & older == "P2", 1, 0)) %>% 
+  select(-P, -older)
+
+rm(yo)
+
+data <- data %>% 
+  mutate(yo = ifelse(young == 0, "o","y"))
 
 ## Variable types 
 names <- dict %>% 
@@ -306,10 +338,11 @@ rm(AC_1, AG_1, CON_1, HA_1, SP_1, TR_1, AC_2, AG_2, CON_2, HA_2, SP_2, TR_2, AC_
 
 # > Cleaned data file ----
 data <- data %>% select(
-  ID, IDYRFAM, IDSEX, IDAB, IDFAMAB, BDAY, 
+  ID, IDYRFAM, IDSEX, IDAB, IDFAMAB, young, old, yo, BDAY, 
   IN_MPQ_AGE, AC_1, AG_1, CON_1, HA_1, SP_1, TR_1, 
   FU1_MPQ_AGE, AC_2, AG_2, CON_2, HA_2, SP_2, TR_2, 
-  FU3_MPQ_AGE, AC_3, AG_3, CON_3, HA_3, SP_3, TR_3)
+  FU3_MPQ_AGE, AC_3, AG_3, CON_3, HA_3, SP_3, TR_3) %>% 
+  filter(is.na(young) == FALSE) #select only full dyads
 rm(dict)
 
 data <- data %>% dplyr::rename(
@@ -318,7 +351,12 @@ data <- data %>% dplyr::rename(
   age_3 = FU3_MPQ_AGE
 )
 
+data <- data %>% mutate(age_3 = age_3 - age_1,
+                        age_2 = age_2 - age_1,
+                        age_1 = 0)
+
 # > Long format ----
+# center age to start at baseline
 long <- reshape(data, direction = "long",
                 varying = list(c("age_1", "age_2", "age_3"),
                                c("AC_1", "AC_2", "AC_3"),
@@ -331,6 +369,14 @@ long <- reshape(data, direction = "long",
                 times = c(0,1,2),
                 v.names = c("age","AC","AG","CON","HA","SP","TR"),
                 idvar = c("ID"))
+row.names(long) <- 1:nrow(long)
+
+# > Export data ----
+##haven::write_sav(data, "./Data/wide.sav")
+##haven::write_sav(long, "./Data/long.sav")
+##
+##write.csv(data, "./Data/wide.csv")
+##write.csv(long, "./Data/long.csv")
 
 # DESCRIPTIVES ====
 # > Plot of change over timepoints ----
@@ -424,3 +470,146 @@ cowplot::plot_grid(pAC, pAG, pCON, pHA, pSP, pTR,
 
 cowplot::plot_grid(paAC, paAG, paCON, paHA, paSP, paTR,
                    nrow = 3, ncol = 2)
+
+# ANALYSIS ====
+# > Ignore dyadic structure ----
+# >> Mean-level change ----
+## Achievement -- best model is m2AC
+m1AC <- lmer(AC ~ age + (1|ID), data = long, REML = FALSE)
+summary(m1AC)
+
+m2AC <- lmer(AC ~ age + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m2AC)
+
+m3AC <- lmer(AC ~ poly(age, degree = 2, raw = TRUE) + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m3AC)
+
+## Aggression -- best model is m3AG
+m1AG <- lmer(AG ~ age + (1|ID), data = long, REML = FALSE)
+summary(m1AG)
+
+m2AG <- lmer(AG ~ age + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m2AG)
+
+m3AG <- lmer(AG ~ poly(age, degree = 2, raw = TRUE) + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m3AG)
+anova(m2AG, m3AG)
+
+## Control -- best model is m1CON
+m1CON <- lmer(CON ~ age + (1|ID), data = long, REML = FALSE)
+summary(m1CON)
+
+m2CON <- lmer(CON ~ age + (1+age|ID), data = long, REML = FALSE,
+              control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m2CON)
+
+m3CON <- lmer(CON ~ poly(age, degree = 2, raw = TRUE) + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m3CON)
+
+## Harm Avoidance -- best model is m1HA
+m1HA <- lmer(HA ~ age + (1|ID), data = long, REML = FALSE)
+summary(m1HA)
+
+m2HA <- lmer(HA ~ age + (1+age|ID), data = long, REML = FALSE,
+              control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m2HA)
+
+m3HA <- lmer(HA ~ poly(age, degree = 2, raw = TRUE) + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m3HA)
+
+## Social Potency -- best model is m1SP
+m1SP <- lmer(SP ~ age + (1|ID), data = long, REML = FALSE)
+summary(m1SP)
+
+m2SP <- lmer(SP ~ age + (1+age|ID), data = long, REML = FALSE,
+              control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m2SP)
+
+m3SP <- lmer(SP ~ poly(age, degree = 2, raw = TRUE) + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m3SP)
+
+
+## Traditionalism -- best model is m1TR
+m1TR <- lmer(TR ~ age + (1|ID), data = long, REML = FALSE)
+summary(m1TR)
+
+m2TR <- lmer(TR ~ age + (1+age|ID), data = long, REML = FALSE,
+              control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m2TR)
+
+m3TR <- lmer(TR ~ poly(age, degree = 2, raw = TRUE) + (1+age|ID), data = long, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(m3TR)
+
+# > Distinguishable dyads ----
+# >> Mean-level change ----
+# >>> Achievement ---- 
+mACy <- lme(fixed = AC ~ -1 + young + young:age,
+            random = ~ -1 + young + young:age | IDYRFAM,
+            na.action = "na.omit",
+            data = long[which(long$yo == "y"),],
+            control = list(maxIter = 1000))
+summary(mACy)
+
+mACo <- lme(fixed = AC ~ -1 + old + old:age,
+            random = ~ -1 + old + old:age | IDYRFAM,
+            na.action = "na.omit",
+            data = long[which(long$yo == "o"),],
+            control = list(maxIter = 1000))
+summary(mACo)
+
+mACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mACd)
+
+# >>> Aggression ----
+mAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mAGd)
+
+# >>> Control  ----
+mCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mCONd)
+
+# >>> Social Potency ----
+mSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mSPd)
+
+# >>> Traditionalism ----
+mTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mTRd)
