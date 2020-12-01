@@ -2,7 +2,7 @@
 ##     SIBS Personality Change         ##
 ##          Linh Nguyen                ##
 ##      Created: 29-Nov-2020           ##
-##    Last updated: 29-Nov-2020        ##
+##    Last updated: 30-Nov-2020        ##
 #########################################
 
 # META ==================================
@@ -12,10 +12,13 @@ library(codebook)
 library(renv)
 library(future) #reliability
 library(ufs) #reliability
+library(reshape)
+library(cowplot) #plotgrid
+
 renv::restore() #package version control
 
 # > Data ----
-dict <- read.csv(file = "./Data/Dictionary.csv", fileEncoding="UTF-8-BOM") #dictionary
+dict <- read.csv(file = "./Data/Dictionary.csv") #dictionary
 
 data <- read.csv(file = './Data/DF_LINH_MPQ.csv', sep = "") %>% 
   select(ID, IDYRFAM, IDSEX, IDAB, IDFAMAB, BDAY, 
@@ -52,13 +55,22 @@ data <- read.csv(file = './Data/DF_LINH_MPQ.csv', sep = "") %>%
          FU3_TR_9, FU3_TR_63, FU3_TR_89, FU3_TR_100_R, FU3_TR_167, FU3_TR_177, FU3_TR_199, FU3_TR_230, FU3_TR_253, FU3_TR_262, FU3_TR_275_R, FU3_TR_285) %>% 
   filter(IDAB != 3)
   
-attach(data)
-
 # CLEANING ==============================
 
 # > Basic cleaning ----
 ## Missing values
 data[data == -98 | data == -97 | data == -96 | data == -95 | data == -94] <- NA
+
+## Duplicated 
+data[duplicated(data$ID),] %>% pull(ID)
+
+### id 8387000 same data different FU3 date
+data %>% filter(ID == 8387000) %>%  select(starts_with("FU3"))
+### id 8679404 slightly different data
+data %>% filter(ID == 8679404) %>%  select(starts_with("FU3"))
+
+### delete both
+data <- data %>% filter(ID != 8387000 & ID != 8679404)
 
 ## Variable types 
 names <- dict %>% 
@@ -206,25 +218,9 @@ TR_3 <- dict %>%
   pull(variable)
 
 ## reorder items within list so reversed items are not first
-AC_1 <- AC_1[c(5,1:4,6:12)]
-AC_2 <- AC_2[c(5,1:4,6:12)]
-AC_3 <- AC_3[c(5,1:4,6:12)]
-
-AG_1 <- AG_1[c(6,1:5,7:12)]
-AG_2 <- AG_2[c(6,1:5,7:12)]
-AG_3 <- AG_3[c(6,1:5,7:12)]
-
-CON_1 <- CON_1[c(6,1:5,7:12)]
-CON_2 <- CON_2[c(6,1:5,7:12)]
-CON_3 <- CON_3[c(6,1:5,7:12)]
-
-SP_1 <- SP_1[c(3,1:2,4:12)]
-SP_2 <- SP_2[c(3,1:2,4:12)]
-SP_3 <- SP_3[c(3,1:2,4:12)]
-
-TR_1 <- TR_1[c(4,1:3,5:12)]
-TR_2 <- TR_2[c(4,1:3,5:12)]
-TR_3 <- TR_3[c(4,1:3,5:12)]
+HA_1 <- HA_1[c(4,1:3,5:12)]
+HA_2 <- HA_2[c(4,1:3,5:12)]
+HA_3 <- HA_3[c(4,1:3,5:12)]
 
 ## create aggregated variables 
 data$AC_1 <- data %>% 
@@ -311,6 +307,120 @@ rm(AC_1, AG_1, CON_1, HA_1, SP_1, TR_1, AC_2, AG_2, CON_2, HA_2, SP_2, TR_2, AC_
 # > Cleaned data file ----
 data <- data %>% select(
   ID, IDYRFAM, IDSEX, IDAB, IDFAMAB, BDAY, 
-  IN_MPQ_AGE, FU1_MPQ_AGE, FU2_MPQ_AGE, FU3_MPQ_AGE, IN_NCDATE, FU1_NCDATE, FU2_NCDATE, FU3_NCDATE,
-  AC_1, AG_1, CON_1, HA_1, SP_1, TR_1, AC_2, AG_2, CON_2, HA_2, SP_2, TR_2, AC_3, AG_3, CON_3, HA_3, SP_3, TR_3)
+  IN_MPQ_AGE, AC_1, AG_1, CON_1, HA_1, SP_1, TR_1, 
+  FU1_MPQ_AGE, AC_2, AG_2, CON_2, HA_2, SP_2, TR_2, 
+  FU3_MPQ_AGE, AC_3, AG_3, CON_3, HA_3, SP_3, TR_3)
 rm(dict)
+
+data <- data %>% dplyr::rename(
+  age_1 = IN_MPQ_AGE,
+  age_2 = FU1_MPQ_AGE,
+  age_3 = FU3_MPQ_AGE
+)
+
+# > Long format ----
+long <- reshape(data, direction = "long",
+                varying = list(c("age_1", "age_2", "age_3"),
+                               c("AC_1", "AC_2", "AC_3"),
+                               c("AG_1", "AG_2", "AG_3"),
+                               c("CON_1", "CON_2", "CON_3"),
+                               c("HA_1", "HA_2", "HA_3"),
+                               c("SP_1", "SP_2", "SP_3"),
+                               c("TR_1", "TR_2", "TR_3")),
+                timevar = "time",
+                times = c(0,1,2),
+                v.names = c("age","AC","AG","CON","HA","SP","TR"),
+                idvar = c("ID"))
+
+# DESCRIPTIVES ====
+# > Plot of change over timepoints ----
+(pAC <- ggplot(data = long,
+               aes(x = time, y = AC, group = ID)) + 
+   geom_line (linetype = "dashed")+ 
+   geom_point(size = 0.5) + 
+   theme_bw () +
+   stat_summary(aes(data=long$AC,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+
+(pAG <- ggplot(data = long,
+               aes(x = time, y = AG, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=long$AG,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+
+(pCON <- ggplot(data = long,
+                aes(x = time, y = CON, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=long$CON,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+
+(pHA <- ggplot(data = long,
+               aes(x = time, y = HA, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=long$HA,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+
+(pSP <- ggplot(data = long,
+               aes(x = time, y = SP, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=long$SP,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+
+(pTR <- ggplot(data = long,
+               aes(x = time, y = TR, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=long$TR,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+
+cowplot::plot_grid(pAC, pAG, pCON, pHA, pSP, pTR,
+                   nrow = 3, ncol = 2)
+
+# > Plot of change with age ----
+(paAC <- ggplot(data = long,
+               aes(x = age, y = AC, group = ID)) + 
+   geom_line (linetype = "dashed")+ 
+   geom_point(size = 0.25) + 
+   theme_bw () +
+   stat_smooth(aes(data=long$AC,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+
+(paAG <- ggplot(data = long,
+               aes(x = age, y = AG, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) + 
+    theme_bw () +
+    stat_smooth(aes(data=long$AG,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+
+(paCON <- ggplot(data = long,
+                aes(x = age, y = CON, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) +
+    theme_bw () +
+    stat_smooth(aes(data=long$CON,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+
+(paHA <- ggplot(data = long,
+               aes(x = age, y = HA, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) +
+    theme_bw () +
+    stat_smooth(aes(data=long$HA,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+
+(paSP <- ggplot(data = long,
+               aes(x = age, y = SP, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) +
+    theme_bw () +
+    stat_smooth(aes(data=long$SP,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+
+(paTR <- ggplot(data = long,
+               aes(x = age, y = TR, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) +
+    theme_bw () +
+    stat_smooth(aes(data=long$TR,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+
+cowplot::plot_grid(paAC, paAG, paCON, paHA, paSP, paTR,
+                   nrow = 3, ncol = 2)
