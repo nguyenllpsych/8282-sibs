@@ -550,7 +550,7 @@ summary(m3TR)
 
 # > Distinguishable dyads ----
 # >> Mean-level change ----
-# >>> Achievement ---- 
+## Achievement 
 mACy <- lme(fixed = AC ~ -1 + young + young:age,
             random = ~ -1 + young + young:age | IDYRFAM,
             na.action = "na.omit",
@@ -574,7 +574,7 @@ mACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age,
             control = list(maxIter = 1000))
 summary(mACd)
 
-# >>> Aggression ----
+## Aggression 
 mAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
@@ -584,7 +584,7 @@ mAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age,
             control = list(maxIter = 1000))
 summary(mAGd)
 
-# >>> Control  ----
+## Control 
 mCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
@@ -594,7 +594,17 @@ mCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age,
             control = list(maxIter = 1000))
 summary(mCONd)
 
-# >>> Social Potency ----
+## Harm Avoidance
+mHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mHAd)
+
+## Social Potency
 mSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
@@ -604,7 +614,7 @@ mSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age,
             control = list(maxIter = 1000))
 summary(mSPd)
 
-# >>> Traditionalism ----
+## Traditionalism
 mTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
@@ -613,3 +623,133 @@ mTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age,
             data = long,
             control = list(maxIter = 1000))
 summary(mTRd)
+
+# >> Gender as moderators ----
+#male = 0, female = 1
+long <- long %>% mutate(
+  IDSEX = ifelse(IDSEX == 1, 0, 1)) 
+
+## Achievement 
+mgACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mgACd)
+
+## Aggression 
+mgAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mgAGd)
+
+## Control 
+mgCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mgCONd)
+
+## Harm Avoidance
+mgHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mgHAd)
+
+## Social Potency
+mgSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mgSPd)
+
+## Traditionalism
+mgTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(mgTRd)
+
+# >> Adoption status as moderators ----
+#bio = 0, adop = 1
+long <- long %>% mutate(
+  IDAB = ifelse(IDAB == 1, 1, 0)) 
+
+## Achievement 
+maACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(maACd)
+
+## Aggression 
+maAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(maAGd)
+
+## Control 
+maCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(maCONd)
+
+## Harm Avoidance
+maHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(maHAd)
+
+## Social Potency
+maSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(maSPd)
+
+## Traditionalism
+maTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000))
+summary(maTRd)
