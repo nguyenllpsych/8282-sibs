@@ -2,7 +2,7 @@
 ##     SIBS Personality Change         ##
 ##          Linh Nguyen                ##
 ##      Created: 29-Nov-2020           ##
-##    Last updated: 01-Dec-2020        ##
+##    Last updated: 02-Dec-2020        ##
 #########################################
 
 # META ==================================
@@ -18,7 +18,6 @@ library(haven) #export spss
 library(lmerTest)
 library(lme4)
 library(nlme)
-library(lavaan)
 
 set.seed(8282)
 options(scipen = 999)
