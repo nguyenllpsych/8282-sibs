@@ -18,6 +18,8 @@ library(haven) #export spss
 library(lmerTest)
 library(lme4)
 library(nlme)
+library(mice) #missingness
+library(finalfit)
 
 set.seed(8282)
 options(scipen = 999)
@@ -487,6 +489,33 @@ cowplot::plot_grid(pAC, pAG, pCON, pHA, pSP, pTR,
 cowplot::plot_grid(paAC, paAG, paCON, paHA, paSP, paTR,
                    nrow = 3, ncol = 2)
 
+rm(sample, paAC, paAG, paCON, paHA, paSP, paTR, pAC, pAG, pCON, pHA, pSP, pTR)
+
+# MISSINGNESS ====
+
+## patterns for response variables
+data %>% dplyr::select(AC_1, AC_2, AC_3) %>% md.pattern()
+data %>% dplyr::select(AG_1, AG_2, AG_3) %>% md.pattern()
+data %>% dplyr::select(CON_1, CON_2, CON_3) %>% md.pattern()
+data %>% dplyr::select(HA_1, HA_2, HA_3) %>% md.pattern()
+data %>% dplyr::select(SP_1, SP_2, SP_3) %>% md.pattern()
+data %>% dplyr::select(TR_1, TR_2, TR_3) %>% md.pattern()
+
+## compare missing and non-missing
+explanatory = c("IDAB", "IDSEX", "age")
+long %>% 
+  missing_compare("AC", explanatory)
+long %>% 
+  missing_compare("AG", explanatory)
+long %>% 
+  missing_compare("CON", explanatory)
+long %>% 
+  missing_compare("HA", explanatory)
+long %>% 
+  missing_compare("SP", explanatory)
+long %>% 
+  missing_compare("TR", explanatory)
+
 # ANALYSIS ====
 # > Ignore dyadic structure ----
 # >> Mean-level change ----
@@ -659,6 +688,7 @@ mgAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(mgAGd)
+anova(mAGd, mgAGd)
 
 ## Control 
 mgCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -670,6 +700,7 @@ mgCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:I
             control = list(maxIter = 1000),
             method = "ML")
 summary(mgCONd)
+anova(mCONd, mgCONd)
 
 ## Harm Avoidance
 mgHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -681,6 +712,7 @@ mgHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(mgHAd)
+anova(mHAd, mgHAd)
 
 ## Social Potency
 mgSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -692,6 +724,7 @@ mgSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(mgSPd)
+anova(mSPd, mgSPd)
 
 ## Traditionalism
 mgTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -703,6 +736,7 @@ mgTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(mgTRd)
+anova(mTRd, mgTRd)
 
 # >> Adoption status as moderators ----
 #bio = 0, adop = 1
@@ -719,6 +753,7 @@ maACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(maACd)
+anova(mACd, maACd)
 
 ## Aggression 
 maAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -730,6 +765,7 @@ maAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(maAGd)
+anova(mAGd, maAGd)
 
 ## Control 
 maCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -741,6 +777,7 @@ maCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:I
             control = list(maxIter = 1000),
             method = "ML")
 summary(maCONd)
+anova(mCONd, maCONd)
 
 ## Harm Avoidance
 maHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -752,6 +789,7 @@ maHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(maHAd)
+anova(mHAd, maHAd)
 
 ## Social Potency
 maSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -763,6 +801,7 @@ maSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(maSPd)
+anova(mSPd, maSPd)
 
 ## Traditionalism
 maTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -774,3 +813,4 @@ maTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDS
             control = list(maxIter = 1000),
             method = "ML")
 summary(maTRd)
+anova(mTRd, maTRd)
