@@ -2,7 +2,7 @@
 ##     SIBS Personality Change         ##
 ##          Linh Nguyen                ##
 ##      Created: 29-Nov-2020           ##
-##    Last updated: 02-Dec-2020        ##
+##    Last updated: 07-Dec-2020        ##
 #########################################
 
 # META ==================================
@@ -60,7 +60,7 @@ data <- read.csv(file = './Data/DF_LINH_MPQ.csv', sep = "") %>%
          IN_Q7, IN_Q36, IN_Q52, IN_Q58, IN_Q105, IN_Q113, IN_Q126, IN_Q150, IN_Q168, IN_Q174, IN_Q181, IN_Q190,
          FU1_Q7, FU1_Q36, FU1_Q52, FU1_Q58, FU1_Q105, FU1_Q113, FU1_Q126, FU1_Q150, FU1_Q168, FU1_Q174, FU1_Q181, FU1_Q190,
          FU3_TR_9, FU3_TR_63, FU3_TR_89, FU3_TR_100_R, FU3_TR_167, FU3_TR_177, FU3_TR_199, FU3_TR_230, FU3_TR_253, FU3_TR_262, FU3_TR_275_R, FU3_TR_285) %>% 
-  filter(IDAB != 3)
+  filter(IDAB != 3) #, is.na(IN_MPQ_AGE) == F
   
 # CLEANING ==============================
 
@@ -71,22 +71,20 @@ data[data == -98 | data == -97 | data == -96 | data == -95 | data == -94] <- NA
 ## Duplicated 
 data[duplicated(data$ID),] %>% pull(IDYRFAM)
 
-### id 8387000 same data different FU3 date
-data %>% filter(ID == 8387000) %>%  select(starts_with("FU3"))
-### id 8679404 slightly different data
-data %>% filter(ID == 8679404) %>%  select(starts_with("FU3"))
-
-### delete both sets of dyads
+### delete both dyads
 data <- data %>% filter(IDYRFAM != 83870 & IDYRFAM != 86794)
 
-## person dummy var 
-data$P <- rep(c(1:2))
+## person dummy var
+data <- data[order(data$ID),]
 
+data$P <- c(rep(c(1:2), times = nrow(data)/2))
+  
 ## young/old dummy var
 yo <- data %>% select(IDYRFAM, BDAY, P) %>% 
-  mutate(BDAY = as.character(BDAY))
+  mutate(BDAY = as.character(BDAY),
+         P = as.character(P))
 
-yo <- dcast(yo, IDYRFAM ~ P, value.var = c("BDAY"))
+yo <- reshape2::dcast(yo, IDYRFAM ~ P, value.var = "BDAY")
 yo <- yo %>% mutate(`1` = as.Date(`1`),
                     `2` = as.Date(`2`))
 yo <- yo %>% mutate(older = ifelse(`1`<`2`, "P1", "P2")) %>% 
@@ -371,11 +369,11 @@ long <- reshape(data, direction = "long",
 row.names(long) <- 1:nrow(long)
 
 # > Export data ----
-##haven::write_sav(data, "./Data/wide.sav")
-##haven::write_sav(long, "./Data/long.sav")
-##
-##write.csv(data, "./Data/wide.csv")
-##write.csv(long, "./Data/long.csv")
+haven::write_sav(data, "./Data/wide.sav")
+haven::write_sav(long, "./Data/long.sav")
+
+write.csv(data, "./Data/wide.csv")
+write.csv(long, "./Data/long.csv")
 
 # DESCRIPTIVES ====
 # > Plot of change over timepoints ----
@@ -550,27 +548,14 @@ summary(m3TR)
 # > Distinguishable dyads ----
 # >> Mean-level change ----
 ## Achievement 
-mACy <- lme(fixed = AC ~ -1 + young + young:age,
-            random = ~ -1 + young + young:age | IDYRFAM,
-            na.action = "na.omit",
-            data = long[which(long$yo == "y"),],
-            control = list(maxIter = 1000))
-summary(mACy)
-
-mACo <- lme(fixed = AC ~ -1 + old + old:age,
-            random = ~ -1 + old + old:age | IDYRFAM,
-            na.action = "na.omit",
-            data = long[which(long$yo == "o"),],
-            control = list(maxIter = 1000))
-summary(mACo)
-
 mACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age,
-            random = ~ -1 + young + old | IDYRFAM,
+            random = ~ -1 + young + old| IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mACd)
 
 ## Aggression 
@@ -580,7 +565,8 @@ mAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age,
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mAGd)
 
 ## Control 
@@ -590,7 +576,8 @@ mCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age,
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mCONd)
 
 ## Harm Avoidance
@@ -600,7 +587,8 @@ mHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age,
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mHAd)
 
 ## Social Potency
@@ -610,7 +598,8 @@ mSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age,
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mSPd)
 
 ## Traditionalism
@@ -620,7 +609,8 @@ mTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age,
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mTRd)
 
 # >> Gender as moderators ----
@@ -635,8 +625,10 @@ mgACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mgACd)
+anova(mACd, mgACd)
 
 ## Aggression 
 mgAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
@@ -645,7 +637,8 @@ mgAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mgAGd)
 
 ## Control 
@@ -655,7 +648,8 @@ mgCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:I
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mgCONd)
 
 ## Harm Avoidance
@@ -665,7 +659,8 @@ mgHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mgHAd)
 
 ## Social Potency
@@ -675,7 +670,8 @@ mgSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mgSPd)
 
 ## Traditionalism
@@ -685,7 +681,8 @@ mgTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(mgTRd)
 
 # >> Adoption status as moderators ----
@@ -700,7 +697,8 @@ maACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(maACd)
 
 ## Aggression 
@@ -710,7 +708,8 @@ maAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(maAGd)
 
 ## Control 
@@ -720,7 +719,8 @@ maCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:I
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(maCONd)
 
 ## Harm Avoidance
@@ -730,7 +730,8 @@ maHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(maHAd)
 
 ## Social Potency
@@ -740,7 +741,8 @@ maSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(maSPd)
 
 ## Traditionalism
@@ -750,5 +752,6 @@ maTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDS
             weights=varIdent(form = ~1 | yo), 
             na.action = "na.omit",
             data = long,
-            control = list(maxIter = 1000))
+            control = list(maxIter = 1000),
+            method = "ML")
 summary(maTRd)
