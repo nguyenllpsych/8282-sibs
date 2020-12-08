@@ -376,94 +376,113 @@ write.csv(data, "./Data/wide.csv")
 write.csv(long, "./Data/long.csv")
 
 # DESCRIPTIVES ====
+
+#random sample for plots
+sample = sample(data$ID, size = 100)
+sample <- data %>% filter(ID %in% c(sample))
+
+sample <- reshape(sample, direction = "long",
+                varying = list(c("age_1", "age_2", "age_3"),
+                               c("AC_1", "AC_2", "AC_3"),
+                               c("AG_1", "AG_2", "AG_3"),
+                               c("CON_1", "CON_2", "CON_3"),
+                               c("HA_1", "HA_2", "HA_3"),
+                               c("SP_1", "SP_2", "SP_3"),
+                               c("TR_1", "TR_2", "TR_3")),
+                timevar = "time",
+                times = c(0,1,2),
+                v.names = c("age","AC","AG","CON","HA","SP","TR"),
+                idvar = c("ID"))
+row.names(sample) <- 1:nrow(sample)
+
 # > Plot of change over timepoints ----
-(pAC <- ggplot(data = long,
+(pAC <- ggplot(data = sample,
                aes(x = time, y = AC, group = ID)) + 
    geom_line (linetype = "dashed")+ 
    geom_point(size = 0.5) + 
    theme_bw () +
-   stat_summary(aes(data=long$AC,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+   stat_summary(aes(data=sample$AC,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
 
-(pAG <- ggplot(data = long,
+(pAG <- ggplot(data = sample,
                aes(x = time, y = AG, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.5) +
     theme_bw () +
-    stat_summary(aes(data=long$AG,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+    stat_summary(aes(data=sample$AG,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
 
-(pCON <- ggplot(data = long,
+(pCON <- ggplot(data = sample,
                 aes(x = time, y = CON, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.5) +
     theme_bw () +
-    stat_summary(aes(data=long$CON,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+    stat_summary(aes(data=sample$CON,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
 
-(pHA <- ggplot(data = long,
+(pHA <- ggplot(data = sample,
                aes(x = time, y = HA, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.5) +
     theme_bw () +
-    stat_summary(aes(data=long$HA,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+    stat_summary(aes(data=sample$HA,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
 
-(pSP <- ggplot(data = long,
+(pSP <- ggplot(data = sample,
                aes(x = time, y = SP, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.5) +
     theme_bw () +
-    stat_summary(aes(data=long$SP,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+    stat_summary(aes(data=sample$SP,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
 
-(pTR <- ggplot(data = long,
+(pTR <- ggplot(data = sample,
                aes(x = time, y = TR, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.5) +
     theme_bw () +
-    stat_summary(aes(data=long$TR,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
+    stat_summary(aes(data=sample$TR,group=1),fun=mean,geom="line",lwd = 1.5, color= "red"))
 
 cowplot::plot_grid(pAC, pAG, pCON, pHA, pSP, pTR,
                    nrow = 3, ncol = 2)
 
 # > Plot of change with age ----
-(paAC <- ggplot(data = long,
+(paAC <- ggplot(data = sample,
                aes(x = age, y = AC, group = ID)) + 
    geom_line (linetype = "dashed")+ 
    geom_point(size = 0.25) + 
    theme_bw () +
-   stat_smooth(aes(data=long$AC,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+   stat_smooth(aes(data=sample$AC,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
 
-(paAG <- ggplot(data = long,
+(paAG <- ggplot(data = sample,
                aes(x = age, y = AG, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.25) + 
     theme_bw () +
-    stat_smooth(aes(data=long$AG,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+    stat_smooth(aes(data=sample$AG,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
 
-(paCON <- ggplot(data = long,
+(paCON <- ggplot(data = sample,
                 aes(x = age, y = CON, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.25) +
     theme_bw () +
-    stat_smooth(aes(data=long$CON,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+    stat_smooth(aes(data=sample$CON,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
 
-(paHA <- ggplot(data = long,
+(paHA <- ggplot(data = sample,
                aes(x = age, y = HA, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.25) +
     theme_bw () +
-    stat_smooth(aes(data=long$HA,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+    stat_smooth(aes(data=sample$HA,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
 
-(paSP <- ggplot(data = long,
+(paSP <- ggplot(data = sample,
                aes(x = age, y = SP, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.25) +
     theme_bw () +
-    stat_smooth(aes(data=long$SP,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+    stat_smooth(aes(data=sample$SP,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
 
-(paTR <- ggplot(data = long,
+(paTR <- ggplot(data = sample,
                aes(x = age, y = TR, group = ID)) + 
     geom_line (linetype = "dashed")+ 
     geom_point(size = 0.25) +
     theme_bw () +
-    stat_smooth(aes(data=long$TR,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
+    stat_smooth(aes(data=sample$TR,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red"))
 
 cowplot::plot_grid(paAC, paAG, paCON, paHA, paSP, paTR,
                    nrow = 3, ncol = 2)
