@@ -661,6 +661,79 @@ mTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age,
             method = "ML")
 summary(mTRd)
 
+# >> Quad change ----
+## Achievement 
+mpACd <- lme(fixed = AC ~ -1 + young + young:poly(age,2) + old + old:poly(age,2),
+            random = ~ -1 + young + old| IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000),
+            method = "ML")
+summary(mpACd)
+anova(mACd, mpACd)
+
+## Aggression 
+mpAGd <- lme(fixed = AG ~ -1 + young + young:poly(age,2) + old + old:poly(age,2),
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000),
+            method = "ML")
+summary(mpAGd)
+anova(mAGd, mpAGd)
+
+## Control 
+mpCONd <- lme(fixed = CON ~ -1 + young + young:poly(age,2) + old + old:poly(age,2),
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000),
+            method = "ML")
+summary(mpCONd)
+anova(mCONd, mpCONd)
+
+## Harm Avoidance
+mpHAd <- lme(fixed = HA ~ -1 + young + young:poly(age,2) + old + old:poly(age,2),
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000),
+            method = "ML")
+summary(mpHAd)
+anova(mHAd, mpHAd)
+
+## Social Potency
+mpSPd <- lme(fixed = SP ~ -1 + young + young:poly(age,2) + old + old:poly(age,2),
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000),
+            method = "ML")
+summary(mpSPd)
+anova(mSPd, mpSPd)
+
+## Traditionalism
+mpTRd <- lme(fixed = TR ~ -1 + young + young:poly(age,2) + old + old:poly(age,2),
+            random = ~ -1 + young + old | IDYRFAM,
+            correlation = corAR1(), 
+            weights=varIdent(form = ~1 | yo), 
+            na.action = "na.omit",
+            data = long,
+            control = list(maxIter = 1000),
+            method = "ML")
+summary(mpTRd)
+anova(mTRd, mpTRd)
+
 # >> Gender as moderators ----
 #male = 0, female = 1
 long <- long %>% mutate(
