@@ -350,10 +350,6 @@ data <- data %>% dplyr::rename(
   age_3 = FU3_MPQ_AGE
 )
 
-data <- data %>% mutate(age_3 = age_3 - age_1,
-                        age_2 = age_2 - age_1,
-                        age_1 = 0)
-
 # > Long format ----
 # center age to start at baseline
 long <- reshape(data, direction = "long",
