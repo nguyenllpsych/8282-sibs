@@ -2,7 +2,7 @@
 ##     SIBS Personality Change         ##
 ##          Linh Nguyen                ##
 ##      Created: 29-Nov-2020           ##
-##    Last updated: 07-Dec-2020        ##
+##    Last updated: 09-Dec-2020        ##
 #########################################
 
 # META ==================================
@@ -813,7 +813,7 @@ long <- long %>% mutate(
   IDAB = ifelse(IDAB == 1, 1, 0)) 
 
 ## Achievement 
-maACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+maACd <- lme(fixed = AC ~ -1 + young + young:age + old + old:age + young:age:IDAB + old:age:IDAB,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
@@ -825,7 +825,7 @@ summary(maACd)
 anova(mACd, maACd)
 
 ## Aggression 
-maAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+maAGd <- lme(fixed = AG ~ -1 + young + young:age + old + old:age + young:age:IDAB + old:age:IDAB,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
@@ -837,7 +837,7 @@ summary(maAGd)
 anova(mAGd, maAGd)
 
 ## Control 
-maCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+maCONd <- lme(fixed = CON ~ -1 + young + young:age + old + old:age + young:age:IDAB + old:age:IDAB,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
@@ -849,7 +849,7 @@ summary(maCONd)
 anova(mCONd, maCONd)
 
 ## Harm Avoidance
-maHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+maHAd <- lme(fixed = HA ~ -1 + young + young:age + old + old:age + young:age:IDAB + old:age:IDAB,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
@@ -861,7 +861,7 @@ summary(maHAd)
 anova(mHAd, maHAd)
 
 ## Social Potency
-maSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+maSPd <- lme(fixed = SP ~ -1 + young + young:age + old + old:age + young:age:IDAB + old:age:IDAB,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
@@ -873,7 +873,7 @@ summary(maSPd)
 anova(mSPd, maSPd)
 
 ## Traditionalism
-maTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDSEX + old:age:IDSEX,
+maTRd <- lme(fixed = TR ~ -1 + young + young:age + old + old:age + young:age:IDAB + old:age:IDAB,
             random = ~ -1 + young + old | IDYRFAM,
             correlation = corAR1(), 
             weights=varIdent(form = ~1 | yo), 
