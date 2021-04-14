@@ -1,7 +1,7 @@
 ---
 title: "Analysis Results"
 author: "Linh Nguyen"
-date: "4/13/2021"
+date: "4/14/2021"
 output: 
   html_document:
     toc: true
@@ -89,11 +89,11 @@ mpq$HA_FU2[is.nan(mpq$HA_FU2)]<-NA
 mpq$HA_FU3[is.nan(mpq$HA_FU3)]<-NA
 ```
 
-### Scale items
+### Demograhpics
 
 ```{r}
 #descriptives
-summary(mpq)
+mpq %>% select(ID, BDAY:FU3_AGE) %>% summary() 
 ```
 
 ### Scale scores
