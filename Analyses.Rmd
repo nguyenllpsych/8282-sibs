@@ -167,3 +167,5 @@ rm(sample, pAG, paAG, pCON, paCON, pHA, paHA)
 There are `r 1231 - sum(is.na(mpq$AG_IN))` participants with complete responses at intake, `r 1231 - sum(is.na(mpq$AG_FU1))` at follow-up 1, `r 1231 - sum(is.na(mpq$AG_FU2))`  at follow-up 2, and `r 1231 - sum(is.na(mpq$AG_FU3))` at follow-up 3.
 
 There are `r length(unique(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with at least 1 sibling at intake, `r length(unique(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r length(unique(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r length(unique(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
+
+There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with both siblings at intake, `r sum(duplicated(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r sum(duplicated(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r sum(duplicated(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
