@@ -1,0 +1,167 @@
+---
+title: "Analysis Results"
+author: "Linh Nguyen"
+date: "4/13/2021"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    code_folding: 'hide'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Meta-data
+
+```{r, message = F}
+require(tidyverse)
+require(rio)
+require(mice)
+require(cowplot)
+set.seed(202104)
+sessionInfo()
+```
+
+# MPQ cleaning and descriptives
+
+```{r}
+#load data
+mpq <- rio::import(file = "./Data/SIBS_LONGITUDINAL_PERSONALITY_20210401.csv") %>% 
+  select(-1)
+
+#agression items
+mpq$AG_IN <- mpq %>% 
+  select(starts_with("AG") & ends_with("IN")) %>% 
+  rowMeans(na.rm = T)
+mpq$AG_FU1 <- mpq %>% 
+  select(starts_with("AG") & ends_with("FU1")) %>% 
+  rowMeans(na.rm = T)
+mpq$AG_FU2 <- mpq %>% 
+  select(starts_with("AG") & ends_with("FU2")) %>% 
+  rowMeans(na.rm = T)
+mpq$AG_FU3 <- mpq %>% 
+  select(starts_with("AG") & ends_with("FU3")) %>% 
+  rowMeans(na.rm = T)
+
+#control items
+mpq$CON_IN <- mpq %>% 
+  select(starts_with("CON") & ends_with("IN")) %>% 
+  rowMeans(na.rm = T)
+mpq$CON_FU1 <- mpq %>% 
+  select(starts_with("CON") & ends_with("FU1")) %>% 
+  rowMeans(na.rm = T)
+mpq$CON_FU2 <- mpq %>% 
+  select(starts_with("CON") & ends_with("FU2")) %>% 
+  rowMeans(na.rm = T)
+mpq$CON_FU3 <- mpq %>% 
+  select(starts_with("CON") & ends_with("FU3")) %>% 
+  rowMeans(na.rm = T)
+
+#harm avoidance items
+mpq$HA_IN <- mpq %>% 
+  select(starts_with("HA") & ends_with("IN")) %>% 
+  rowMeans(na.rm = T)
+mpq$HA_FU1 <- mpq %>% 
+  select(starts_with("HA") & ends_with("FU1")) %>% 
+  rowMeans(na.rm = T)
+mpq$HA_FU2 <- mpq %>% 
+  select(starts_with("HA") & ends_with("FU2")) %>% 
+  rowMeans(na.rm = T)
+mpq$HA_FU3 <- mpq %>% 
+  select(starts_with("HA") & ends_with("FU3")) %>% 
+  rowMeans(na.rm = T)
+
+#clean up NaN
+mpq$AG_IN[is.nan(mpq$AG_IN)]<-NA
+mpq$AG_FU1[is.nan(mpq$AG_FU1)]<-NA
+mpq$AG_FU2[is.nan(mpq$AG_FU2)]<-NA
+mpq$AG_FU3[is.nan(mpq$AG_FU3)]<-NA
+mpq$CON_IN[is.nan(mpq$CON_IN)]<-NA
+mpq$CON_FU1[is.nan(mpq$CON_FU1)]<-NA
+mpq$CON_FU2[is.nan(mpq$CON_FU2)]<-NA
+mpq$CON_FU3[is.nan(mpq$CON_FU3)]<-NA
+mpq$HA_IN[is.nan(mpq$HA_IN)]<-NA
+mpq$HA_FU1[is.nan(mpq$HA_FU1)]<-NA
+mpq$HA_FU2[is.nan(mpq$HA_FU2)]<-NA
+mpq$HA_FU3[is.nan(mpq$HA_FU3)]<-NA
+```
+
+### Scale items
+
+```{r}
+#descriptives
+summary(mpq)
+```
+
+### Scale scores
+```{r, message = F, warning = F}
+#descriptives/missingness
+mpq %>% select(AG_IN:HA_FU3) %>% summary()
+mpq %>% select(AG_IN, AG_FU1, AG_FU2, AG_FU3) %>% md.pattern(rotate.names = T)
+
+#random sample for plots
+sample = sample(mpq$ID, size = 100)
+sample <- mpq %>% filter(ID %in% c(sample))
+sample <- reshape(sample, direction = "long",
+                varying = list(c("IN_AGE", "FU1_AGE", "FU2_AGE", "FU3_AGE"),
+                               c("AG_IN", "AG_FU1", "AG_FU2", "AG_FU3"),
+                               c("CON_IN", "CON_FU1", "CON_FU2", "CON_FU3"),
+                               c("HA_IN", "HA_FU1", "HA_FU2", "HA_FU3")),
+                timevar = "time",
+                times = c(0,1,2,3),
+                v.names = c("age","AG","CON","HA"),
+                idvar = c("ID"))
+row.names(sample) <- 1:nrow(sample)
+
+#plot by timepoints
+pAG <- ggplot(data = sample,
+               aes(x = time, y = AG, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=sample$AG,group=1),fun=mean,geom="line",lwd = 1.5, color= "red")
+pCON <- ggplot(data = sample,
+                aes(x = time, y = CON, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=sample$CON,group=1),fun=mean,geom="line",lwd = 1.5, color= "red")
+pHA <- ggplot(data = sample,
+               aes(x = time, y = HA, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.5) +
+    theme_bw () +
+    stat_summary(aes(data=sample$HA,group=1),fun=mean,geom="line",lwd = 1.5, color= "red")
+
+#plot by age
+paAG <- ggplot(data = sample,
+               aes(x = age, y = AG, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) + 
+    theme_bw () +
+    stat_smooth(aes(data=sample$AG,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red")
+paCON <- ggplot(data = sample,
+                aes(x = age, y = CON, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) +
+    theme_bw () +
+    stat_smooth(aes(data=sample$CON,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red")
+paHA <- ggplot(data = sample,
+               aes(x = age, y = HA, group = ID)) + 
+    geom_line (linetype = "dashed")+ 
+    geom_point(size = 0.25) +
+    theme_bw () +
+    stat_smooth(aes(data=sample$HA,group=1),method="lm",formula=y ~ poly(x, 2),lwd = 1.5, color= "red")
+  
+cowplot::plot_grid(pAG, paAG,
+                   pCON, paCON, 
+                   pHA, paHA,
+                   nrow = 3, ncol = 2)
+
+rm(sample, pAG, paAG, pCON, paCON, pHA, paHA)
+```
+
+There are `r 1231 - sum(is.na(mpq$AG_IN))` complete responses at intake, `r 1231 - sum(is.na(mpq$AG_FU1))` at follow-up 1, `r 1231 - sum(is.na(mpq$AG_FU2))`  at follow-up 2, and `r 1231 - sum(is.na(mpq$AG_FU3))` at follow-up 3.
