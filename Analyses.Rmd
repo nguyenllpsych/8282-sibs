@@ -22,6 +22,8 @@ require(rio)
 require(mice)
 require(cowplot)
 require(reshape2)
+require(lavaan)
+require(semPlot)
 set.seed(202104)
 sessionInfo()
 ```
@@ -116,6 +118,10 @@ names(old) <- paste0(names(old), "_o", sep = "")
 old <- old %>% rename(IDYRFAM = IDYRFAM_o)
 
 yo <- merge(young,old)
+
+#create adopted/bio variable
+yo <- yo %>% 
+  mutate(adopt = ifelse(IDAB_y == 1 | IDAB_o == 1, 1, 0))
 ```
 
 ### Demographics
@@ -132,6 +138,7 @@ The average time between assessments is:
 - Between follow-up 3 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU3) - as.Date(mpq$NCDATE_FU2), na.rm = T))/365` years.
 
 ### Scale scores
+
 ```{r, message = F, warning = F}
 #descriptives/missingness
 mpq %>% select(AG_IN:HA_FU3) %>% summary()
@@ -208,6 +215,53 @@ There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with bot
 
 # III. Analyses
 
+## Random parcel sampling
+
+3 random parcels 
+
+```{r}
+par <- c(1:18)
+(par1 <- sample(par, size = 6)) #parcel 1
+(par2 <- sample(par[which(!par %in% par1)], size = 6)) #parcel 2
+(par3 <- par[which(!par %in% par1 & !par %in% par2)]) #parcel 3
+
+# aggression AG 
+yo <- yo %>% 
+  mutate(# older sibling
+         AG_IN_o_p1 = rowMeans(select(yo, AG12_IN_o, AG18_IN_o, AG4_IN_o, AG15_IN_o, AG6_IN_o, AG2_IN_o), na.rm = T),
+         AG_IN_o_p2 = rowMeans(select(yo, AG10_IN_o, AG17_IN_o, AG7_IN_o, AG13_IN_o, AG1_IN_o, AG3_IN_o), na.rm = T),
+         AG_IN_o_p3 = rowMeans(select(yo, AG5_IN_o, AG8_IN_o, AG9_IN_o, AG11_IN_o, AG14_IN_o, AG16_IN_o), na.rm = T),
+         
+         AG_FU1_o_p1 = rowMeans(select(yo, AG12_FU1_o, AG18_FU1_o, AG4_FU1_o, AG15_FU1_o, AG6_FU1_o, AG2_FU1_o), na.rm = T),
+         AG_FU1_o_p2 = rowMeans(select(yo, AG10_FU1_o, AG17_FU1_o, AG7_FU1_o, AG13_FU1_o, AG1_FU1_o, AG3_FU1_o), na.rm = T),
+         AG_FU1_o_p3 = rowMeans(select(yo, AG5_FU1_o, AG8_FU1_o, AG9_FU1_o, AG11_FU1_o, AG14_FU1_o, AG16_FU1_o), na.rm = T),
+         
+         AG_FU2_o_p1 = rowMeans(select(yo, AG12_FU2_o, AG18_FU2_o, AG4_FU2_o, AG15_FU2_o, AG6_FU2_o, AG2_FU2_o), na.rm = T),
+         AG_FU2_o_p2 = rowMeans(select(yo, AG10_FU2_o, AG17_FU2_o, AG7_FU2_o, AG13_FU2_o, AG1_FU2_o, AG3_FU2_o), na.rm = T),
+         AG_FU2_o_p3 = rowMeans(select(yo, AG5_FU2_o, AG8_FU2_o, AG9_FU2_o, AG11_FU2_o, AG14_FU2_o, AG16_FU2_o), na.rm = T),
+         
+         AG_FU3_o_p1 = rowMeans(select(yo, AG12_FU3_o, AG18_FU3_o, AG4_FU3_o, AG6_FU3_o, AG2_FU3_o), na.rm = T),
+         AG_FU3_o_p2 = rowMeans(select(yo, AG10_FU3_o, AG7_FU3_o), na.rm = T),
+         AG_FU3_o_p3 = rowMeans(select(yo, AG5_FU3_o, AG8_FU3_o, AG11_FU3_o, AG14_FU3_o, AG16_FU3_o), na.rm = T),
+         
+         # younger sibling
+         AG_IN_y_p1 = rowMeans(select(yo, AG12_IN_y, AG18_IN_y, AG4_IN_y, AG15_IN_y, AG6_IN_y, AG2_IN_y), na.rm = T),
+         AG_IN_y_p2 = rowMeans(select(yo, AG10_IN_y, AG17_IN_y, AG7_IN_y, AG13_IN_y, AG1_IN_y, AG3_IN_y), na.rm = T),
+         AG_IN_y_p3 = rowMeans(select(yo, AG5_IN_y, AG8_IN_y, AG9_IN_y, AG11_IN_y, AG14_IN_y, AG16_IN_y), na.rm = T),
+         
+         AG_FU1_y_p1 = rowMeans(select(yo, AG12_FU1_y, AG18_FU1_y, AG4_FU1_y, AG15_FU1_y, AG6_FU1_y, AG2_FU1_y), na.rm = T),
+         AG_FU1_y_p2 = rowMeans(select(yo, AG10_FU1_y, AG17_FU1_y, AG7_FU1_y, AG13_FU1_y, AG1_FU1_y, AG3_FU1_y), na.rm = T),
+         AG_FU1_y_p3 = rowMeans(select(yo, AG5_FU1_y, AG8_FU1_y, AG9_FU1_y, AG11_FU1_y, AG14_FU1_y, AG16_FU1_y), na.rm = T),
+         
+         AG_FU2_y_p1 = rowMeans(select(yo, AG12_FU2_y, AG18_FU2_y, AG4_FU2_y, AG15_FU2_y, AG6_FU2_y, AG2_FU2_y), na.rm = T),
+         AG_FU2_y_p2 = rowMeans(select(yo, AG10_FU2_y, AG17_FU2_y, AG7_FU2_y, AG13_FU2_y, AG1_FU2_y, AG3_FU2_y), na.rm = T),
+         AG_FU2_y_p3 = rowMeans(select(yo, AG5_FU2_y, AG8_FU2_y, AG9_FU2_y, AG11_FU2_y, AG14_FU2_y, AG16_FU2_y), na.rm = T),
+         
+         AG_FU3_y_p1 = rowMeans(select(yo, AG12_FU3_y, AG18_FU3_y, AG4_FU3_y, AG6_FU3_y, AG2_FU3_y), na.rm = T),
+         AG_FU3_y_p2 = rowMeans(select(yo, AG10_FU3_y, AG7_FU3_y), na.rm = T),
+         AG_FU3_y_p3 = rowMeans(select(yo, AG5_FU3_y, AG8_FU3_y, AG11_FU3_y, AG14_FU3_y, AG16_FU3_y), na.rm = T))
+```
+
 ## Adopted vs. Non-adopted sibling pairs
 
 ### Aggression AG
@@ -215,7 +269,101 @@ There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with bot
 ```{r}
 sibAG <- '
 #younger sibling
-AG0y =~ AG1_IN_y + a*AG2_IN_y + b*AG3_IN_y + c*AG4_IN_y + d*AG5_IN_y
+AG0y =~   AG_IN_y_p1  + p2 * AG_IN_y_p2   + p3 * AG_IN_y_p3
+AG3y =~   AG_FU1_y_p1 + p2 * AG_FU1_y_p2  + p3 * AG_FU1_y_p3
+AG7y =~   AG_FU2_y_p1 + p2 * AG_FU2_y_p2  + p3 * AG_FU2_y_p3
+AG16y =~  AG_FU3_y_p1 + p2 * AG_FU3_y_p2  + p3 * AG_FU3_y_p3
+                   
+#older sibling
+AG0o =~   AG_IN_o_p1  + p2 * AG_IN_o_p2   + p3 * AG_IN_o_p3
+AG3o =~   AG_FU1_o_p1 + p2 * AG_FU1_o_p2  + p3 * AG_FU1_o_p3
+AG7o =~   AG_FU2_o_p1 + p2 * AG_FU2_o_p2  + p3 * AG_FU2_o_p3
+AG16o =~  AG_FU3_o_p1 + p2 * AG_FU3_o_p2  + p3 * AG_FU3_o_p3
+
+#latent intercept and slopes
+iy =~ 1*AG0y + 1*AG3y + 1*AG7y + 1*AG16y
+io =~ 1*AG0o + 1*AG3o + 1*AG7o + 1*AG16o
+sy =~ 0*AG0y + 3.3*AG3y + 7.6*AG7y + 17*AG16y
+so =~ 0*AG0o + 3.3*AG3o + 7.6*AG7o + 17*AG16o
+iy ~ 1
+io ~ 1
+sy ~ 1
+so ~ 1
+
+#fix zero latent intercepts
+AG0y ~ 0*1
+AG3y ~ 0*1
+AG7y ~ 0*1
+AG16y ~ 0*1
+AG0o ~ 0*1
+AG3o ~ 0*1
+AG7o ~ 0*1
+AG16o ~ 0*1
+
+#fix zero/equal item intercepts
+AG_IN_y_p1  ~ 0*1
+AG_FU1_y_p1 ~ 0*1
+AG_FU2_y_p1 ~ 0*1
+AG_FU3_y_p1 ~ 0*1
+AG_IN_o_p1  ~ 0*1
+AG_FU1_o_p1 ~ 0*1
+AG_FU2_o_p1 ~ 0*1
+AG_FU3_o_p1 ~ 0*1
+
+AG_IN_y_p2  ~ par2*1
+AG_FU1_y_p2 ~ par2*1
+AG_FU2_y_p2 ~ par2*1
+AG_FU3_y_p2 ~ par2*1
+AG_IN_o_p2  ~ par2*1
+AG_FU1_o_p2 ~ par2*1
+AG_FU2_o_p2 ~ par2*1
+AG_FU3_o_p2 ~ par2*1
+
+AG_IN_y_p3  ~ par3*1
+AG_FU1_y_p3 ~ par3*1
+AG_FU2_y_p3 ~ par3*1
+AG_FU3_y_p3 ~ par3*1
+AG_IN_o_p3  ~ par3*1
+AG_FU1_o_p3 ~ par3*1
+AG_FU2_o_p3 ~ par3*1
+AG_FU3_o_p3 ~ par3*1
+
+#residual covariances
+AG_IN_y_p1 ~~ c(cov11)*AG_FU1_y_p1 + c(cov12)*AG_FU2_y_p1 + c(cov13)*AG_FU3_y_p1 
+AG_FU1_y_p1 ~~ c(cov11)*AG_FU2_y_p1 + c(cov12)*AG_FU3_y_p1 
+AG_FU2_y_p1 ~~ c(cov11)*AG_FU3_y_p1 
+
+AG_IN_y_p2 ~~ c(cov21)*AG_FU1_y_p2 + c(cov22)*AG_FU2_y_p2 + c(cov23)*AG_FU3_y_p2 
+AG_FU1_y_p2 ~~ c(cov21)*AG_FU2_y_p2 + c(cov22)*AG_FU3_y_p2 
+AG_FU2_y_p2 ~~ c(cov21)*AG_FU3_y_p2 
+
+AG_IN_y_p3 ~~ c(cov31)*AG_FU1_y_p3 + c(cov32)*AG_FU2_y_p3 + c(cov33)*AG_FU3_y_p3 
+AG_FU1_y_p3 ~~ c(cov31)*AG_FU2_y_p3 + c(cov32)*AG_FU3_y_p3 
+AG_FU2_y_p3 ~~ c(cov31)*AG_FU3_y_p3 
+
+AG_IN_o_p1 ~~ c(cov11)*AG_FU1_o_p1 + c(cov12)*AG_FU2_o_p1 + c(cov13)*AG_FU3_o_p1 
+AG_FU1_o_p1 ~~ c(cov11)*AG_FU2_o_p1 + c(cov12)*AG_FU3_o_p1 
+AG_FU2_o_p1 ~~ c(cov11)*AG_FU3_o_p1 
+
+AG_IN_o_p2 ~~ c(cov21)*AG_FU1_o_p2 + c(cov22)*AG_FU2_o_p2 + c(cov23)*AG_FU3_o_p2 
+AG_FU1_o_p2 ~~ c(cov21)*AG_FU2_o_p2 + c(cov22)*AG_FU3_o_p2 
+AG_FU2_o_p2 ~~ c(cov21)*AG_FU3_o_p2 
+
+AG_IN_o_p3 ~~ c(cov31)*AG_FU1_o_p3 + c(cov32)*AG_FU2_o_p3 + c(cov33)*AG_FU3_o_p3 
+AG_FU1_o_p3 ~~ c(cov31)*AG_FU2_o_p3 + c(cov32)*AG_FU3_o_p3 
+AG_FU2_o_p3 ~~ c(cov31)*AG_FU3_o_p3 
 '
+#ad_sibAG <- sem(sibAG, data = yo[which(yo$adopt == 1),], missing = "FIML")
+#summary(ad_sibAG, fit.measures = T, standardized = T)
+
+#bio_sibAG <- sem(sibAG, data = yo[which(yo$adopt == 0),], missing = "FIML")
+#summary(bio_sibAG, fit.measures = T, standardized = T)
+
+g_sibAG <- sem(sibAG, data = yo, missing = "FIML", group = "adopt")
+summary(g_sibAG, fit.measures = T, standardized = T, ci = T)
+
+sibAG <- sem(sibAG, data = yo, missing = "FIML")
+summary(sibAG, fit.measures = T, standardized = T, ci = T)
+semPaths(sibAG, what = "col", whatLabels = "est", intercepts = T)
 ```
 
