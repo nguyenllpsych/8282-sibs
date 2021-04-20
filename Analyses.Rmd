@@ -1,7 +1,7 @@
 ---
 title: "Analysis Results"
 author: "Linh Nguyen"
-date: "4/14/2021"
+date: "4/19/2021"
 output: 
   html_document:
     toc: true
@@ -14,25 +14,26 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Meta-data
+# I. Meta-data
 
 ```{r, message = F}
 require(tidyverse)
 require(rio)
 require(mice)
 require(cowplot)
+require(reshape2)
 set.seed(202104)
 sessionInfo()
 ```
 
-# MPQ cleaning and descriptives
+# II. MPQ cleaning and descriptives
 
 ```{r}
 #load data
 mpq <- rio::import(file = "./Data/SIBS_LONGITUDINAL_PERSONALITY_20210413.csv") %>% 
   select(-1)
 
-#agression items
+#aggression items
 mpq$AG_IN <- mpq %>% 
   select(starts_with("AG") & ends_with("IN")) %>% 
   rowMeans(na.rm = T)
@@ -87,14 +88,48 @@ mpq$HA_IN[is.nan(mpq$HA_IN)]<-NA
 mpq$HA_FU1[is.nan(mpq$HA_FU1)]<-NA
 mpq$HA_FU2[is.nan(mpq$HA_FU2)]<-NA
 mpq$HA_FU3[is.nan(mpq$HA_FU3)]<-NA
+
+#create wide dyad dataframe
+mpq <- mpq[order(mpq$ID),]
+mpq$P <- rep(c(1:2), length.out = nrow(mpq)) #person dummy var
+yo <- mpq %>% select(IDYRFAM, BDAY, P) %>% 
+  mutate(BDAY = as.character(BDAY),
+         P = as.character(P))
+yo <- reshape2::dcast(yo, IDYRFAM ~ P, value.var = "BDAY") #wide data with 2 siblings per row
+yo <- yo %>% mutate(`1` = as.Date(`1`),
+                    `2` = as.Date(`2`))
+yo <- yo %>% mutate(older = ifelse(`1`<`2`, "P1", "P2")) %>% 
+  select(IDYRFAM, older)
+mpq <- merge(mpq, yo)
+mpq <- mpq %>% 
+  mutate(yo = ifelse(P == 1 & older == "P2" | P == 2 & older == "P1", "y", "o")) %>%  #y = younger, o = older
+  select(-P, -older)
+
+young <- mpq %>%      #data with only younger sib
+  filter(yo == "y")
+names(young) <- paste0(names(young), "_y", sep = "")
+young <- young %>% rename(IDYRFAM = IDYRFAM_y)
+
+old <- mpq %>%        #data with only older sib
+  filter(yo == "o")
+names(old) <- paste0(names(old), "_o", sep = "")
+old <- old %>% rename(IDYRFAM = IDYRFAM_o)
+
+yo <- merge(young,old)
 ```
 
-### Demograhpics
+### Demographics
 
 ```{r}
 #descriptives
 mpq %>% select(ID, BDAY:FU3_AGE) %>% summary() 
 ```
+
+The average time between assessments is:
+
+- Between intake and follow-up 1: `r as.numeric(mean(as.Date(mpq$NCDATE_FU1) - as.Date(mpq$NCDATE_IN), na.rm = T))/365` years.
+- Between follow-up 1 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU2) - as.Date(mpq$NCDATE_FU1), na.rm = T))/365` years.
+- Between follow-up 3 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU3) - as.Date(mpq$NCDATE_FU2), na.rm = T))/365` years.
 
 ### Scale scores
 ```{r, message = F, warning = F}
@@ -169,3 +204,18 @@ There are `r 1231 - sum(is.na(mpq$AG_IN))` participants with complete responses 
 There are `r length(unique(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with at least 1 sibling at intake, `r length(unique(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r length(unique(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r length(unique(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
 
 There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with both siblings at intake, `r sum(duplicated(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r sum(duplicated(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r sum(duplicated(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
+
+
+# III. Analyses
+
+## Adopted vs. Non-adopted sibling pairs
+
+### Aggression AG
+
+```{r}
+sibAG <- '
+#younger sibling
+AG0y =~ AG1_IN_y + a*AG2_IN_y + b*AG3_IN_y + c*AG4_IN_y + d*AG5_IN_y
+'
+```
+
