@@ -1,7 +1,7 @@
 ---
 title: "Analysis Results"
 author: "Linh Nguyen"
-date: "4/19/2021"
+date: "`r Sys.Date()`"
 output: 
   html_document:
     toc: true
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # I. Meta-data
 
-```{r, message = F}
+```{r library, message = F}
 require(tidyverse)
 require(rio)
 require(mice)
@@ -24,13 +24,16 @@ require(cowplot)
 require(reshape2)
 require(lavaan)
 require(semPlot)
+require(kableExtra)
+require(summarytools)
+options(digits = 3)
 set.seed(202104)
-sessionInfo()
+print(sessionInfo(), locale = FALSE)
 ```
 
 # II. MPQ cleaning and descriptives
 
-```{r}
+```{r import-data}
 #load data
 mpq <- rio::import(file = "./Data/SIBS_LONGITUDINAL_PERSONALITY_20210413.csv") %>% 
   select(-1)
@@ -117,7 +120,8 @@ old <- mpq %>%        #data with only older sib
 names(old) <- paste0(names(old), "_o", sep = "")
 old <- old %>% rename(IDYRFAM = IDYRFAM_o)
 
-yo <- merge(young,old)
+yo <- merge(young, old)
+rm(young, old)
 
 #create adopted/bio variable
 yo <- yo %>% 
@@ -126,9 +130,11 @@ yo <- yo %>%
 
 ### Demographics
 
-```{r}
+```{r demo, results = "asis"}
 #descriptives
-mpq %>% select(ID, BDAY:FU3_AGE) %>% summary() 
+mpq %>% 
+  select(IDSEX:FU3_AGE) %>% 
+  descr(stats = "common", order = "p")
 ```
 
 The average time between assessments is:
@@ -139,10 +145,9 @@ The average time between assessments is:
 
 ### Scale scores
 
-```{r, message = F, warning = F}
-#descriptives/missingness
-mpq %>% select(AG_IN:HA_FU3) %>% summary()
-mpq %>% select(AG_IN, AG_FU1, AG_FU2, AG_FU3) %>% md.pattern(rotate.names = T)
+```{r scores, message = F, warning = F, results = "asis"}
+#descriptives
+mpq %>% select(AG_IN:HA_FU3) %>% descr(stats = "common", order = "p")
 
 #random sample for plots
 sample = sample(mpq$ID, size = 100)
@@ -217,13 +222,11 @@ There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with bot
 
 ## Random parcel sampling
 
-3 random parcels 
-
-```{r}
+```{r parcel}
 par <- c(1:18)
-(par1 <- sample(par, size = 6)) #parcel 1
-(par2 <- sample(par[which(!par %in% par1)], size = 6)) #parcel 2
-(par3 <- par[which(!par %in% par1 & !par %in% par2)]) #parcel 3
+par1 <- sample(par, size = 6) #parcel 1
+par2 <- sample(par[which(!par %in% par1)], size = 6) #parcel 2
+par3 <- par[which(!par %in% par1 & !par %in% par2)] #parcel 3
 
 # aggression AG 
 yo <- yo %>% 
@@ -260,13 +263,100 @@ yo <- yo %>%
          AG_FU3_y_p1 = rowMeans(select(yo, AG12_FU3_y, AG18_FU3_y, AG4_FU3_y, AG6_FU3_y, AG2_FU3_y), na.rm = T),
          AG_FU3_y_p2 = rowMeans(select(yo, AG10_FU3_y, AG7_FU3_y), na.rm = T),
          AG_FU3_y_p3 = rowMeans(select(yo, AG5_FU3_y, AG8_FU3_y, AG11_FU3_y, AG14_FU3_y, AG16_FU3_y), na.rm = T))
+
+# control CON 
+yo <- yo %>% 
+  mutate(# older sibling
+         CON_IN_o_p1 = rowMeans(select(yo, CON12_IN_o, CON18_IN_o, CON4_IN_o, CON15_IN_o, CON6_IN_o, CON2_IN_o), na.rm = T),
+         CON_IN_o_p2 = rowMeans(select(yo, CON10_IN_o, CON17_IN_o, CON7_IN_o, CON13_IN_o, CON1_IN_o, CON3_IN_o), na.rm = T),
+         CON_IN_o_p3 = rowMeans(select(yo, CON5_IN_o, CON8_IN_o, CON9_IN_o, CON11_IN_o, CON14_IN_o, CON16_IN_o), na.rm = T),
+         
+         CON_FU1_o_p1 = rowMeans(select(yo, CON12_FU1_o, CON18_FU1_o, CON4_FU1_o, CON15_FU1_o, CON6_FU1_o, CON2_FU1_o), na.rm = T),
+         CON_FU1_o_p2 = rowMeans(select(yo, CON10_FU1_o, CON17_FU1_o, CON7_FU1_o, CON13_FU1_o, CON1_FU1_o, CON3_FU1_o), na.rm = T),
+         CON_FU1_o_p3 = rowMeans(select(yo, CON5_FU1_o, CON8_FU1_o, CON9_FU1_o, CON11_FU1_o, CON14_FU1_o, CON16_FU1_o), na.rm = T),
+         
+         CON_FU2_o_p1 = rowMeans(select(yo, CON12_FU2_o, CON18_FU2_o, CON4_FU2_o, CON15_FU2_o, CON6_FU2_o, CON2_FU2_o), na.rm = T),
+         CON_FU2_o_p2 = rowMeans(select(yo, CON10_FU2_o, CON17_FU2_o, CON7_FU2_o, CON13_FU2_o, CON1_FU2_o, CON3_FU2_o), na.rm = T),
+         CON_FU2_o_p3 = rowMeans(select(yo, CON5_FU2_o, CON8_FU2_o, CON9_FU2_o, CON11_FU2_o, CON14_FU2_o, CON16_FU2_o), na.rm = T),
+         
+         CON_FU3_o_p1 = rowMeans(select(yo, CON4_FU3_o, CON15_FU3_o, CON6_FU3_o, CON2_FU3_o), na.rm = T),
+         CON_FU3_o_p2 = rowMeans(select(yo, CON10_FU3_o, CON17_FU3_o, CON7_FU3_o), na.rm = T),
+         CON_FU3_o_p3 = rowMeans(select(yo, CON5_FU3_o, CON8_FU3_o, CON9_FU3_o, CON16_FU3_o), na.rm = T),
+         
+         # younger sibling
+         CON_IN_y_p1 = rowMeans(select(yo, CON12_IN_y, CON18_IN_y, CON4_IN_y, CON15_IN_y, CON6_IN_y, CON2_IN_y), na.rm = T),
+         CON_IN_y_p2 = rowMeans(select(yo, CON10_IN_y, CON17_IN_y, CON7_IN_y, CON13_IN_y, CON1_IN_y, CON3_IN_y), na.rm = T),
+         CON_IN_y_p3 = rowMeans(select(yo, CON5_IN_y, CON8_IN_y, CON9_IN_y, CON11_IN_y, CON14_IN_y, CON16_IN_y), na.rm = T),
+         
+         CON_FU1_y_p1 = rowMeans(select(yo, CON12_FU1_y, CON18_FU1_y, CON4_FU1_y, CON15_FU1_y, CON6_FU1_y, CON2_FU1_y), na.rm = T),
+         CON_FU1_y_p2 = rowMeans(select(yo, CON10_FU1_y, CON17_FU1_y, CON7_FU1_y, CON13_FU1_y, CON1_FU1_y, CON3_FU1_y), na.rm = T),
+         CON_FU1_y_p3 = rowMeans(select(yo, CON5_FU1_y, CON8_FU1_y, CON9_FU1_y, CON11_FU1_y, CON14_FU1_y, CON16_FU1_y), na.rm = T),
+         
+         CON_FU2_y_p1 = rowMeans(select(yo, CON12_FU2_y, CON18_FU2_y, CON4_FU2_y, CON15_FU2_y, CON6_FU2_y, CON2_FU2_y), na.rm = T),
+         CON_FU2_y_p2 = rowMeans(select(yo, CON10_FU2_y, CON17_FU2_y, CON7_FU2_y, CON13_FU2_y, CON1_FU2_y, CON3_FU2_y), na.rm = T),
+         CON_FU2_y_p3 = rowMeans(select(yo, CON5_FU2_y, CON8_FU2_y, CON9_FU2_y, CON11_FU2_y, CON14_FU2_y, CON16_FU2_y), na.rm = T),
+         
+         CON_FU3_y_p1 = rowMeans(select(yo, CON4_FU3_y, CON15_FU3_y, CON6_FU3_y, CON2_FU3_y), na.rm = T),
+         CON_FU3_y_p2 = rowMeans(select(yo, CON10_FU3_y, CON17_FU3_y, CON7_FU3_y), na.rm = T),
+         CON_FU3_y_p3 = rowMeans(select(yo, CON5_FU3_y, CON8_FU3_y, CON9_FU3_y, CON16_FU3_y), na.rm = T))
+
+# harm avoidance HA
+yo <- yo %>% 
+    mutate(# older sibling
+         HA_IN_o_p1 = rowMeans(select(yo, HA12_IN_o, HA18_IN_o, HA4_IN_o, HA15_IN_o, HA6_IN_o, HA2_IN_o), na.rm = T),
+         HA_IN_o_p2 = rowMeans(select(yo, HA10_IN_o, HA17_IN_o, HA7_IN_o, HA13_IN_o, HA1_IN_o, HA3_IN_o), na.rm = T),
+         HA_IN_o_p3 = rowMeans(select(yo, HA5_IN_o, HA8_IN_o, HA9_IN_o, HA11_IN_o, HA14_IN_o, HA16_IN_o), na.rm = T),
+         
+         HA_FU1_o_p1 = rowMeans(select(yo, HA12_FU1_o, HA18_FU1_o, HA4_FU1_o, HA15_FU1_o, HA6_FU1_o, HA2_FU1_o), na.rm = T),
+         HA_FU1_o_p2 = rowMeans(select(yo, HA10_FU1_o, HA17_FU1_o, HA7_FU1_o, HA13_FU1_o, HA1_FU1_o, HA3_FU1_o), na.rm = T),
+         HA_FU1_o_p3 = rowMeans(select(yo, HA5_FU1_o, HA8_FU1_o, HA9_FU1_o, HA11_FU1_o, HA14_FU1_o, HA16_FU1_o), na.rm = T),
+         
+         HA_FU2_o_p1 = rowMeans(select(yo, HA12_FU2_o, HA18_FU2_o, HA4_FU2_o, HA15_FU2_o, HA6_FU2_o, HA2_FU2_o), na.rm = T),
+         HA_FU2_o_p2 = rowMeans(select(yo, HA10_FU2_o, HA17_FU2_o, HA7_FU2_o, HA13_FU2_o, HA1_FU2_o, HA3_FU2_o), na.rm = T),
+         HA_FU2_o_p3 = rowMeans(select(yo, HA5_FU2_o, HA8_FU2_o, HA9_FU2_o, HA11_FU2_o, HA14_FU2_o, HA16_FU2_o), na.rm = T),
+         
+         HA_FU3_o_p1 = rowMeans(select(yo, HA18_FU3_o, HA4_FU3_o, HA6_FU3_o, HA2_FU3_o), na.rm = T),
+         HA_FU3_o_p2 = rowMeans(select(yo, HA10_FU3_o, HA7_FU3_o, HA13_FU3_o, HA1_FU3_o, HA3_FU3_o), na.rm = T),
+         HA_FU3_o_p3 = rowMeans(select(yo, HA8_FU3_o, HA9_FU3_o, HA16_FU3_o), na.rm = T),
+         
+         # younger sibling
+         HA_IN_y_p1 = rowMeans(select(yo, HA12_IN_y, HA18_IN_y, HA4_IN_y, HA15_IN_y, HA6_IN_y, HA2_IN_y), na.rm = T),
+         HA_IN_y_p2 = rowMeans(select(yo, HA10_IN_y, HA17_IN_y, HA7_IN_y, HA13_IN_y, HA1_IN_y, HA3_IN_y), na.rm = T),
+         HA_IN_y_p3 = rowMeans(select(yo, HA5_IN_y, HA8_IN_y, HA9_IN_y, HA11_IN_y, HA14_IN_y, HA16_IN_y), na.rm = T),
+         
+         HA_FU1_y_p1 = rowMeans(select(yo, HA12_FU1_y, HA18_FU1_y, HA4_FU1_y, HA15_FU1_y, HA6_FU1_y, HA2_FU1_y), na.rm = T),
+         HA_FU1_y_p2 = rowMeans(select(yo, HA10_FU1_y, HA17_FU1_y, HA7_FU1_y, HA13_FU1_y, HA1_FU1_y, HA3_FU1_y), na.rm = T),
+         HA_FU1_y_p3 = rowMeans(select(yo, HA5_FU1_y, HA8_FU1_y, HA9_FU1_y, HA11_FU1_y, HA14_FU1_y, HA16_FU1_y), na.rm = T),
+         
+         HA_FU2_y_p1 = rowMeans(select(yo, HA12_FU2_y, HA18_FU2_y, HA4_FU2_y, HA15_FU2_y, HA6_FU2_y, HA2_FU2_y), na.rm = T),
+         HA_FU2_y_p2 = rowMeans(select(yo, HA10_FU2_y, HA17_FU2_y, HA7_FU2_y, HA13_FU2_y, HA1_FU2_y, HA3_FU2_y), na.rm = T),
+         HA_FU2_y_p3 = rowMeans(select(yo, HA5_FU2_y, HA8_FU2_y, HA9_FU2_y, HA11_FU2_y, HA14_FU2_y, HA16_FU2_y), na.rm = T),
+         
+         HA_FU3_y_p1 = rowMeans(select(yo, HA18_FU3_y, HA4_FU3_y, HA6_FU3_y, HA2_FU3_y), na.rm = T),
+         HA_FU3_y_p2 = rowMeans(select(yo, HA10_FU3_y, HA7_FU3_y, HA13_FU3_y, HA1_FU3_y, HA3_FU3_y), na.rm = T),
+         HA_FU3_y_p3 = rowMeans(select(yo, HA8_FU3_y, HA9_FU3_y, HA16_FU3_y), na.rm = T))
+
+  
+# clean up NaN
+for (row in seq(nrow(yo))) {
+  for (col in seq(ncol(yo))) {
+    if (is.nan(yo[row, col])) {
+      yo[row, col] <- NA
+    }}} # END for row/col LOOP
 ```
+
+For SEM analyses of each personality variable, the three parcels were randomized to contain items numbered:
+
+- Parcel 1: `r paste0(sort(par1))`
+- Parcel 2: `r paste0(sort(par2))`
+- Parcel 3: `r paste0(sort(par3))`
+
 
 ## Adopted vs. Non-adopted sibling pairs
 
 ### Aggression AG
 
-```{r}
+```{r adopt-AG, warning = F, cache = T}
 sibAG <- '
 #younger sibling
 AG0y =~   AG_IN_y_p1  + p2 * AG_IN_y_p2   + p3 * AG_IN_y_p3
@@ -359,11 +449,247 @@ AG_FU2_o_p3 ~~ c(cov31)*AG_FU3_o_p3
 #bio_sibAG <- sem(sibAG, data = yo[which(yo$adopt == 0),], missing = "FIML")
 #summary(bio_sibAG, fit.measures = T, standardized = T)
 
-g_sibAG <- sem(sibAG, data = yo, missing = "FIML", group = "adopt")
-summary(g_sibAG, fit.measures = T, standardized = T, ci = T)
+#g_sibAG <- sem(sibAG, data = yo, missing = "FIML", group = "adopt", em.iter.max = 20000)
+#summary(g_sibAG, fit.measures = T, standardized = T, ci = T)
 
 sibAG <- sem(sibAG, data = yo, missing = "FIML")
-summary(sibAG, fit.measures = T, standardized = T, ci = T)
+
+fitMeasures(sibAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
+
+parameterEstimates(sibAG, standardized = T) %>% 
+  filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
+  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  knitr::kable(caption = "Intercept and Slope") %>% 
+  kable_styling()
+
+parameterEstimates(sibAG, standardized = T) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  knitr::kable(caption = "Correlated intercepts and slopes") %>% 
+  kable_styling()
+
 semPaths(sibAG, what = "col", whatLabels = "est", intercepts = T)
 ```
 
+
+### Control CON
+
+```{r adopt-CON, warning = F, cache = T}
+sibCON <- '
+#younger sibling
+CON0y =~   CON_IN_y_p1  + p2 * CON_IN_y_p2   + p3 * CON_IN_y_p3
+CON3y =~   CON_FU1_y_p1 + p2 * CON_FU1_y_p2  + p3 * CON_FU1_y_p3
+CON7y =~   CON_FU2_y_p1 + p2 * CON_FU2_y_p2  + p3 * CON_FU2_y_p3
+CON16y =~  CON_FU3_y_p1 + p2 * CON_FU3_y_p2  + p3 * CON_FU3_y_p3
+                   
+#older sibling
+CON0o =~   CON_IN_o_p1  + p2 * CON_IN_o_p2   + p3 * CON_IN_o_p3
+CON3o =~   CON_FU1_o_p1 + p2 * CON_FU1_o_p2  + p3 * CON_FU1_o_p3
+CON7o =~   CON_FU2_o_p1 + p2 * CON_FU2_o_p2  + p3 * CON_FU2_o_p3
+CON16o =~  CON_FU3_o_p1 + p2 * CON_FU3_o_p2  + p3 * CON_FU3_o_p3
+
+#latent intercept and slopes
+iy =~ 1*CON0y + 1*CON3y + 1*CON7y + 1*CON16y
+io =~ 1*CON0o + 1*CON3o + 1*CON7o + 1*CON16o
+sy =~ 0*CON0y + 3.3*CON3y + 7.6*CON7y + 17*CON16y
+so =~ 0*CON0o + 3.3*CON3o + 7.6*CON7o + 17*CON16o
+iy ~ 1
+io ~ 1
+sy ~ 1
+so ~ 1
+
+#fix zero latent intercepts
+CON0y ~ 0*1
+CON3y ~ 0*1
+CON7y ~ 0*1
+CON16y ~ 0*1
+CON0o ~ 0*1
+CON3o ~ 0*1
+CON7o ~ 0*1
+CON16o ~ 0*1
+
+#fix zero/equal item intercepts
+CON_IN_y_p1  ~ 0*1
+CON_FU1_y_p1 ~ 0*1
+CON_FU2_y_p1 ~ 0*1
+CON_FU3_y_p1 ~ 0*1
+CON_IN_o_p1  ~ 0*1
+CON_FU1_o_p1 ~ 0*1
+CON_FU2_o_p1 ~ 0*1
+CON_FU3_o_p1 ~ 0*1
+
+CON_IN_y_p2  ~ par2*1
+CON_FU1_y_p2 ~ par2*1
+CON_FU2_y_p2 ~ par2*1
+CON_FU3_y_p2 ~ par2*1
+CON_IN_o_p2  ~ par2*1
+CON_FU1_o_p2 ~ par2*1
+CON_FU2_o_p2 ~ par2*1
+CON_FU3_o_p2 ~ par2*1
+
+CON_IN_y_p3  ~ par3*1
+CON_FU1_y_p3 ~ par3*1
+CON_FU2_y_p3 ~ par3*1
+CON_FU3_y_p3 ~ par3*1
+CON_IN_o_p3  ~ par3*1
+CON_FU1_o_p3 ~ par3*1
+CON_FU2_o_p3 ~ par3*1
+CON_FU3_o_p3 ~ par3*1
+
+#residual covariances
+CON_IN_y_p1 ~~ c(cov11)*CON_FU1_y_p1 + c(cov12)*CON_FU2_y_p1 + c(cov13)*CON_FU3_y_p1 
+CON_FU1_y_p1 ~~ c(cov11)*CON_FU2_y_p1 + c(cov12)*CON_FU3_y_p1 
+CON_FU2_y_p1 ~~ c(cov11)*CON_FU3_y_p1 
+
+CON_IN_y_p2 ~~ c(cov21)*CON_FU1_y_p2 + c(cov22)*CON_FU2_y_p2 + c(cov23)*CON_FU3_y_p2 
+CON_FU1_y_p2 ~~ c(cov21)*CON_FU2_y_p2 + c(cov22)*CON_FU3_y_p2 
+CON_FU2_y_p2 ~~ c(cov21)*CON_FU3_y_p2 
+
+CON_IN_y_p3 ~~ c(cov31)*CON_FU1_y_p3 + c(cov32)*CON_FU2_y_p3 + c(cov33)*CON_FU3_y_p3 
+CON_FU1_y_p3 ~~ c(cov31)*CON_FU2_y_p3 + c(cov32)*CON_FU3_y_p3 
+CON_FU2_y_p3 ~~ c(cov31)*CON_FU3_y_p3 
+
+CON_IN_o_p1 ~~ c(cov11)*CON_FU1_o_p1 + c(cov12)*CON_FU2_o_p1 + c(cov13)*CON_FU3_o_p1 
+CON_FU1_o_p1 ~~ c(cov11)*CON_FU2_o_p1 + c(cov12)*CON_FU3_o_p1 
+CON_FU2_o_p1 ~~ c(cov11)*CON_FU3_o_p1 
+
+CON_IN_o_p2 ~~ c(cov21)*CON_FU1_o_p2 + c(cov22)*CON_FU2_o_p2 + c(cov23)*CON_FU3_o_p2 
+CON_FU1_o_p2 ~~ c(cov21)*CON_FU2_o_p2 + c(cov22)*CON_FU3_o_p2 
+CON_FU2_o_p2 ~~ c(cov21)*CON_FU3_o_p2 
+
+CON_IN_o_p3 ~~ c(cov31)*CON_FU1_o_p3 + c(cov32)*CON_FU2_o_p3 + c(cov33)*CON_FU3_o_p3 
+CON_FU1_o_p3 ~~ c(cov31)*CON_FU2_o_p3 + c(cov32)*CON_FU3_o_p3 
+CON_FU2_o_p3 ~~ c(cov31)*CON_FU3_o_p3 
+'
+
+sibCON <- sem(sibCON, data = yo, missing = "FIML")
+
+fitMeasures(sibCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
+
+parameterEstimates(sibCON, standardized = T) %>% 
+  filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
+  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  knitr::kable(caption = "Intercept and Slope") %>% 
+  kable_styling()
+
+parameterEstimates(sibCON, standardized = T) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & z < 1.324) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  knitr::kable(caption = "Correlated intercepts and slopes") %>% 
+  kable_styling()
+
+semPaths(sibCON, what = "col", whatLabels = "est", intercepts = T)
+```
+
+
+### Harm Avoidance HA
+
+```{r adopt-HA, warning = F, cache = T}
+sibHA <- '
+#younger sibling
+HA0y =~   HA_IN_y_p1  + p2 * HA_IN_y_p2   + p3 * HA_IN_y_p3
+HA3y =~   HA_FU1_y_p1 + p2 * HA_FU1_y_p2  + p3 * HA_FU1_y_p3
+HA7y =~   HA_FU2_y_p1 + p2 * HA_FU2_y_p2  + p3 * HA_FU2_y_p3
+HA16y =~  HA_FU3_y_p1 + p2 * HA_FU3_y_p2  + p3 * HA_FU3_y_p3
+                   
+#older sibling
+HA0o =~   HA_IN_o_p1  + p2 * HA_IN_o_p2   + p3 * HA_IN_o_p3
+HA3o =~   HA_FU1_o_p1 + p2 * HA_FU1_o_p2  + p3 * HA_FU1_o_p3
+HA7o =~   HA_FU2_o_p1 + p2 * HA_FU2_o_p2  + p3 * HA_FU2_o_p3
+HA16o =~  HA_FU3_o_p1 + p2 * HA_FU3_o_p2  + p3 * HA_FU3_o_p3
+
+#latent intercept and slopes
+iy =~ 1*HA0y + 1*HA3y + 1*HA7y + 1*HA16y
+io =~ 1*HA0o + 1*HA3o + 1*HA7o + 1*HA16o
+sy =~ 0*HA0y + 3.3*HA3y + 7.6*HA7y + 17*HA16y
+so =~ 0*HA0o + 3.3*HA3o + 7.6*HA7o + 17*HA16o
+iy ~ 1
+io ~ 1
+sy ~ 1
+so ~ 1
+
+#fix zero latent intercepts
+HA0y ~ 0*1
+HA3y ~ 0*1
+HA7y ~ 0*1
+HA16y ~ 0*1
+HA0o ~ 0*1
+HA3o ~ 0*1
+HA7o ~ 0*1
+HA16o ~ 0*1
+
+#fix zero/equal item intercepts
+HA_IN_y_p1  ~ 0*1
+HA_FU1_y_p1 ~ 0*1
+HA_FU2_y_p1 ~ 0*1
+HA_FU3_y_p1 ~ 0*1
+HA_IN_o_p1  ~ 0*1
+HA_FU1_o_p1 ~ 0*1
+HA_FU2_o_p1 ~ 0*1
+HA_FU3_o_p1 ~ 0*1
+
+HA_IN_y_p2  ~ par2*1
+HA_FU1_y_p2 ~ par2*1
+HA_FU2_y_p2 ~ par2*1
+HA_FU3_y_p2 ~ par2*1
+HA_IN_o_p2  ~ par2*1
+HA_FU1_o_p2 ~ par2*1
+HA_FU2_o_p2 ~ par2*1
+HA_FU3_o_p2 ~ par2*1
+
+HA_IN_y_p3  ~ par3*1
+HA_FU1_y_p3 ~ par3*1
+HA_FU2_y_p3 ~ par3*1
+HA_FU3_y_p3 ~ par3*1
+HA_IN_o_p3  ~ par3*1
+HA_FU1_o_p3 ~ par3*1
+HA_FU2_o_p3 ~ par3*1
+HA_FU3_o_p3 ~ par3*1
+
+#residual covariances
+HA_IN_y_p1 ~~ c(cov11)*HA_FU1_y_p1 + c(cov12)*HA_FU2_y_p1 + c(cov13)*HA_FU3_y_p1 
+HA_FU1_y_p1 ~~ c(cov11)*HA_FU2_y_p1 + c(cov12)*HA_FU3_y_p1 
+HA_FU2_y_p1 ~~ c(cov11)*HA_FU3_y_p1 
+
+HA_IN_y_p2 ~~ c(cov21)*HA_FU1_y_p2 + c(cov22)*HA_FU2_y_p2 + c(cov23)*HA_FU3_y_p2 
+HA_FU1_y_p2 ~~ c(cov21)*HA_FU2_y_p2 + c(cov22)*HA_FU3_y_p2 
+HA_FU2_y_p2 ~~ c(cov21)*HA_FU3_y_p2 
+
+HA_IN_y_p3 ~~ c(cov31)*HA_FU1_y_p3 + c(cov32)*HA_FU2_y_p3 + c(cov33)*HA_FU3_y_p3 
+HA_FU1_y_p3 ~~ c(cov31)*HA_FU2_y_p3 + c(cov32)*HA_FU3_y_p3 
+HA_FU2_y_p3 ~~ c(cov31)*HA_FU3_y_p3 
+
+HA_IN_o_p1 ~~ c(cov11)*HA_FU1_o_p1 + c(cov12)*HA_FU2_o_p1 + c(cov13)*HA_FU3_o_p1 
+HA_FU1_o_p1 ~~ c(cov11)*HA_FU2_o_p1 + c(cov12)*HA_FU3_o_p1 
+HA_FU2_o_p1 ~~ c(cov11)*HA_FU3_o_p1 
+
+HA_IN_o_p2 ~~ c(cov21)*HA_FU1_o_p2 + c(cov22)*HA_FU2_o_p2 + c(cov23)*HA_FU3_o_p2 
+HA_FU1_o_p2 ~~ c(cov21)*HA_FU2_o_p2 + c(cov22)*HA_FU3_o_p2 
+HA_FU2_o_p2 ~~ c(cov21)*HA_FU3_o_p2 
+
+HA_IN_o_p3 ~~ c(cov31)*HA_FU1_o_p3 + c(cov32)*HA_FU2_o_p3 + c(cov33)*HA_FU3_o_p3 
+HA_FU1_o_p3 ~~ c(cov31)*HA_FU2_o_p3 + c(cov32)*HA_FU3_o_p3 
+HA_FU2_o_p3 ~~ c(cov31)*HA_FU3_o_p3 
+'
+
+sibHA <- sem(sibHA, data = yo, missing = "FIML")
+
+fitMeasures(sibHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
+
+parameterEstimates(sibHA, standardized = T) %>% 
+  filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
+  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  knitr::kable(caption = "Intercept and Slope") %>% 
+  kable_styling()
+
+parameterEstimates(sibHA, standardized = T) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  knitr::kable(caption = "Correlated intercepts and slopes") %>% 
+  kable_styling()
+
+semPaths(sibHA, what = "col", whatLabels = "est", intercepts = T)
+```
