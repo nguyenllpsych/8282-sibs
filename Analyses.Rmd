@@ -12,23 +12,39 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(digits = 3)
+set.seed(202104)
+
+# load libraries
+libraries <- c("rio",          # import export
+               "summarytools", # descriptive statistics
+               "kableExtra",   # table formatting
+               "mice",         # missing pattern
+               "cowplot",      # plot arrangement
+               "reshape2",     # reshape data wide long
+               "lavaan",       # SEM
+               "semPlot",      # SEM plots
+               "tidyverse")    # general wrangling
+
+lapply(libraries, require, character.only = TRUE)
 ```
 
 # I. Meta-data
 
-```{r library, message = F}
-require(tidyverse)
-require(rio)
-require(mice)
-require(cowplot)
-require(reshape2)
-require(lavaan)
-require(semPlot)
-require(kableExtra)
-require(summarytools)
-options(digits = 3)
-set.seed(202104)
-print(sessionInfo(), locale = FALSE)
+```{r session-info, message = FALSE, warning = FALSE, results = "hold"}
+# list of loaded packages and versions
+si <- devtools::session_info()[[2]]
+rownames(si) <- NULL
+si %>% 
+  select(package, loadedversion, date, source) %>% 
+  
+  #red bold the called packages
+  mutate(package = cell_spec(package, 
+                             color = ifelse(package %in% libraries, "red", "black"),
+                             bold = ifelse(package %in% libraries, TRUE, FALSE))) %>% 
+  knitr::kable(escape = F, caption = "All loaded packages. Bolded in red are those loaded explicitly with <code>library()</code>") %>% 
+  kable_styling() %>% 
+  scroll_box(height = "300px")
 ```
 
 # II. MPQ cleaning and descriptives
@@ -352,12 +368,12 @@ For SEM analyses of each personality variable, the three parcels were randomized
 - Parcel 3: `r paste0(sort(par3))`
 
 
-## Adopted vs. Non-adopted sibling pairs
+## General change trajectories and correlated change
 
 ### Aggression AG
 
-```{r adopt-AG, warning = F, cache = T}
-sibAG <- '
+```{r lgm-AG, warning = F, cache = T}
+lgmAG <- '
 #younger sibling
 AG0y =~   AG_IN_y_p1  + p2 * AG_IN_y_p2   + p3 * AG_IN_y_p3
 AG3y =~   AG_FU1_y_p1 + p2 * AG_FU1_y_p2  + p3 * AG_FU1_y_p3
@@ -452,7 +468,7 @@ AG_FU2_o_p3 ~~ c(cov31)*AG_FU3_o_p3
 #g_sibAG <- sem(sibAG, data = yo, missing = "FIML", group = "adopt", em.iter.max = 20000)
 #summary(g_sibAG, fit.measures = T, standardized = T, ci = T)
 
-sibAG <- sem(sibAG, data = yo, missing = "FIML")
+sibAG <- sem(lgmAG, data = yo, missing = "FIML")
 
 fitMeasures(sibAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
@@ -461,13 +477,15 @@ parameterEstimates(sibAG, standardized = T) %>%
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
   select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope") %>% 
-  kable_styling()
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 parameterEstimates(sibAG, standardized = T) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
   select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes") %>% 
-  kable_styling()
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 semPaths(sibAG, what = "col", whatLabels = "est", intercepts = T)
 ```
@@ -475,8 +493,8 @@ semPaths(sibAG, what = "col", whatLabels = "est", intercepts = T)
 
 ### Control CON
 
-```{r adopt-CON, warning = F, cache = T}
-sibCON <- '
+```{r lgm-CON, warning = F, cache = T}
+lgmCON <- '
 #younger sibling
 CON0y =~   CON_IN_y_p1  + p2 * CON_IN_y_p2   + p3 * CON_IN_y_p3
 CON3y =~   CON_FU1_y_p1 + p2 * CON_FU1_y_p2  + p3 * CON_FU1_y_p3
@@ -563,7 +581,7 @@ CON_FU1_o_p3 ~~ c(cov31)*CON_FU2_o_p3 + c(cov32)*CON_FU3_o_p3
 CON_FU2_o_p3 ~~ c(cov31)*CON_FU3_o_p3 
 '
 
-sibCON <- sem(sibCON, data = yo, missing = "FIML")
+sibCON <- sem(lgmCON, data = yo, missing = "FIML")
 
 fitMeasures(sibCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
@@ -572,13 +590,15 @@ parameterEstimates(sibCON, standardized = T) %>%
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
   select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope") %>% 
-  kable_styling()
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 parameterEstimates(sibCON, standardized = T) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & z < 1.324) %>% 
   select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes") %>% 
-  kable_styling()
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 semPaths(sibCON, what = "col", whatLabels = "est", intercepts = T)
 ```
@@ -586,8 +606,8 @@ semPaths(sibCON, what = "col", whatLabels = "est", intercepts = T)
 
 ### Harm Avoidance HA
 
-```{r adopt-HA, warning = F, cache = T}
-sibHA <- '
+```{r lgm-HA, warning = F, cache = T}
+lgmHA <- '
 #younger sibling
 HA0y =~   HA_IN_y_p1  + p2 * HA_IN_y_p2   + p3 * HA_IN_y_p3
 HA3y =~   HA_FU1_y_p1 + p2 * HA_FU1_y_p2  + p3 * HA_FU1_y_p3
@@ -674,7 +694,7 @@ HA_FU1_o_p3 ~~ c(cov31)*HA_FU2_o_p3 + c(cov32)*HA_FU3_o_p3
 HA_FU2_o_p3 ~~ c(cov31)*HA_FU3_o_p3 
 '
 
-sibHA <- sem(sibHA, data = yo, missing = "FIML")
+sibHA <- sem(lgmHA, data = yo, missing = "FIML")
 
 fitMeasures(sibHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
@@ -683,13 +703,115 @@ parameterEstimates(sibHA, standardized = T) %>%
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
   select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope") %>% 
-  kable_styling()
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 parameterEstimates(sibHA, standardized = T) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
   select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes") %>% 
-  kable_styling()
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 semPaths(sibHA, what = "col", whatLabels = "est", intercepts = T)
+```
+
+## Adopted vs. Non-adopted
+
+Here we compare between-sibling correlations in adopted vs. non-adopted sibling pairs. 
+
+Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation. 
+
+### Adoption status - Aggression AG
+
+```{r adopt-AG, warning=FALSE, message=FALSE}
+adoptAG <- sem(lgmAG, data = yo, missing = "FIML",
+               group = "adopt")
+
+fitMeasures(adoptAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
+
+# intercept and slope 
+parameterEstimates(adoptAG, standardized = T) %>% 
+  filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
+  select("Adopted" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
+  arrange(Parameters) %>% 
+  knitr::kable(caption = "Intercept and Slope") %>% 
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
+
+# correlated intercepts and slopes
+parameterEstimates(adoptAG, standardized = T) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
+  arrange(lhs) %>% 
+  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
+  knitr::kable(caption = "Correlated intercepts and slopes") %>% 
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
+```
+
+
+### Adoption status - Control CON
+
+```{r adopt-CON, warning=FALSE, message=FALSE}
+adoptCON <- sem(lgmCON, data = yo, missing = "FIML",
+                group = "adopt")
+
+fitMeasures(adoptCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
+
+# intercept and slope 
+parameterEstimates(adoptCON, standardized = T) %>% 
+  filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
+  select("Adopted" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
+  arrange(Parameters) %>% 
+  knitr::kable(caption = "Intercept and Slope") %>% 
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
+
+# correlated intercepts and slopes
+parameterEstimates(adoptCON, standardized = T) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
+  arrange(lhs) %>% 
+  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
+  slice(-c(2,4)) %>% 
+  knitr::kable(caption = "Correlated intercepts and slopes") %>% 
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
+```
+
+
+### Adoption status - Harm Avoidance HA
+
+```{r adopt-HA, warning=FALSE, message=FALSE}
+adoptHA <- sem(lgmHA, data = yo, missing = "FIML",
+                group = "adopt")
+
+fitMeasures(adoptHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
+
+# intercept and slope 
+parameterEstimates(adoptHA, standardized = T) %>% 
+  filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
+  select("Adopted" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
+  arrange(Parameters) %>% 
+  knitr::kable(caption = "Intercept and Slope") %>% 
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
+
+# correlated intercepts and slopes
+parameterEstimates(adoptHA, standardized = T) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
+  arrange(lhs) %>% 
+  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
+  slice(-c(2,4)) %>% 
+  knitr::kable(caption = "Correlated intercepts and slopes") %>% 
+  kable_styling() %>% 
+  footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
