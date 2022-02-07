@@ -455,16 +455,16 @@ sibAG <- sem(lgmAG, data = yo, missing = "FIML")
 fitMeasures(sibAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
 
-as.data.frame(unclass(parameterEstimates(sibAG, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibAG))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
-as.data.frame(unclass(parameterEstimates(sibAG, standardized = T))) %>% 
-  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
-  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+as.data.frame(unclass(standardizedSolution(sibAG))) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
@@ -552,16 +552,16 @@ sibCON <- sem(lgmCON, data = yo, missing = "FIML")
 fitMeasures(sibCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
 
-as.data.frame(unclass(parameterEstimates(sibCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibCON))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
-as.data.frame(unclass(parameterEstimates(sibCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibCON))) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & z < 1.324) %>% 
-  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
@@ -649,16 +649,16 @@ sibHA <- sem(lgmHA, data = yo, missing = "FIML")
 fitMeasures(sibHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
 
-as.data.frame(unclass(parameterEstimates(sibHA, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibHA))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
-as.data.frame(unclass(parameterEstimates(sibHA, standardized = T))) %>% 
-  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
-  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+as.data.frame(unclass(standardizedSolution(sibHA))) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
@@ -690,9 +690,9 @@ fitMeasures(adoptAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"),
             output = "text")
 
 # intercept and slope 
-as.data.frame(unclass(parameterEstimates(adoptAG, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(adoptAG))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Adopted" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Adopted" = group, "Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
   arrange(Parameters) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
@@ -700,10 +700,10 @@ as.data.frame(unclass(parameterEstimates(adoptAG, standardized = T))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 # correlated intercepts and slopes
-as.data.frame(unclass(parameterEstimates(adoptAG, standardized = T))) %>% 
-  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
+as.data.frame(unclass(standardizedSolution(adoptAG))) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
   arrange(lhs) %>% 
-  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
@@ -721,9 +721,9 @@ fitMeasures(adoptCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"),
             output = "text")
 
 # intercept and slope 
-as.data.frame(unclass(parameterEstimates(adoptCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(adoptCON))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Adopted" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Adopted" = group, "Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
   arrange(Parameters) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
@@ -731,10 +731,10 @@ as.data.frame(unclass(parameterEstimates(adoptCON, standardized = T))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 # correlated intercepts and slopes
-as.data.frame(unclass(parameterEstimates(adoptCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(adoptCON))) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
   arrange(lhs) %>% 
-  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
   slice(-c(2,4)) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
@@ -753,9 +753,9 @@ fitMeasures(adoptHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"),
             output = "text")
 
 # intercept and slope 
-as.data.frame(unclass(parameterEstimates(adoptHA, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(adoptHA))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Adopted" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Adopted" = group, "Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
   arrange(Parameters) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
@@ -763,10 +763,10 @@ as.data.frame(unclass(parameterEstimates(adoptHA, standardized = T))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 # correlated intercepts and slopes
-as.data.frame(unclass(parameterEstimates(adoptHA, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(adoptHA))) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
   arrange(lhs) %>% 
-  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Adopted" = group, "Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(Adopted = ifelse(Adopted == 1, "adopt", "bio")) %>% 
   slice(-c(2,4)) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
@@ -800,9 +800,9 @@ sexAG <- sem(lgmAG, data = yo, missing = "FIML",
 #            output = "text")
 
 # intercept and slope 
-as.data.frame(unclass(parameterEstimates(sexAG, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sexAG))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("SameSex" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("SameSex" = group, "Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(SameSex = ifelse(SameSex == 1, "same-sex", "opposite-sex")) %>% 
   arrange(Parameters) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
@@ -810,10 +810,10 @@ as.data.frame(unclass(parameterEstimates(sexAG, standardized = T))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 # correlated intercepts and slopes
-as.data.frame(unclass(parameterEstimates(sexAG, standardized = T))) %>% 
-  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
+as.data.frame(unclass(standardizedSolution(sexAG))) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
   arrange(lhs) %>% 
-  select("SameSex" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("SameSex" = group, "Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(SameSex = ifelse(SameSex == 1, "same-sex", "opposite-sex")) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
@@ -831,9 +831,9 @@ sexCON <- sem(lgmCON, data = yo, missing = "FIML",
 #            output = "text")
 
 # intercept and slope 
-as.data.frame(unclass(parameterEstimates(sexCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sexCON))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("SameSex" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("SameSex" = group, "Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(SameSex = ifelse(SameSex == 1, "same-sex", "opposite-sex")) %>% 
   arrange(Parameters) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
@@ -841,10 +841,10 @@ as.data.frame(unclass(parameterEstimates(sexCON, standardized = T))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 # correlated intercepts and slopes
-as.data.frame(unclass(parameterEstimates(sexCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sexCON))) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
   arrange(lhs) %>% 
-  select("SameSex" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("SameSex" = group, "Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(SameSex = ifelse(SameSex == 1, "same-sex", "opposite-sex")) %>% 
   slice(-c(2,4)) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
@@ -863,9 +863,9 @@ sexHA <- sem(lgmHA, data = yo, missing = "FIML",
 #            output = "text")
 
 # intercept and slope 
-as.data.frame(unclass(parameterEstimates(sexHA, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sexHA))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("SameSex" = group, "Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("SameSex" = group, "Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(SameSex = ifelse(SameSex == 1, "same-sex", "opposite-sex")) %>% 
   arrange(Parameters) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
@@ -873,10 +873,10 @@ as.data.frame(unclass(parameterEstimates(sexHA, standardized = T))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
 # correlated intercepts and slopes
-as.data.frame(unclass(parameterEstimates(sexHA, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sexHA))) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
   arrange(lhs) %>% 
-  select("SameSex" = group, "Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("SameSex" = group, "Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   mutate(SameSex = ifelse(SameSex == 1, "same-sex", "opposite-sex")) %>% 
   slice(-c(2,4)) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
@@ -993,16 +993,16 @@ sibAG <- sem(lgmAG, data = yo, missing = "FIML")
 fitMeasures(sibAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
 
-as.data.frame(unclass(parameterEstimates(sibAG, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibAG))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
-as.data.frame(unclass(parameterEstimates(sibAG, standardized = T))) %>% 
-  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
-  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+as.data.frame(unclass(standardizedSolution(sibAG))) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
@@ -1106,16 +1106,16 @@ sibCON <- sem(lgmCON, data = yo, missing = "FIML")
 fitMeasures(sibCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
 
-as.data.frame(unclass(parameterEstimates(sibCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibCON))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
-as.data.frame(unclass(parameterEstimates(sibCON, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibCON))) %>% 
   filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & z < 1.324) %>% 
-  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
@@ -1219,16 +1219,16 @@ sibHA <- sem(lgmHA, data = yo, missing = "FIML")
 fitMeasures(sibHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
             output = "text")
 
-as.data.frame(unclass(parameterEstimates(sibHA, standardized = T))) %>% 
+as.data.frame(unclass(standardizedSolution(sibHA))) %>% 
   filter(op == "~1" & lhs %in% c("iy", "io", "sy", "so")) %>% 
-  select("Parameters" = lhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+  select("Parameters" = lhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Intercept and Slope", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 
-as.data.frame(unclass(parameterEstimates(sibHA, standardized = T))) %>% 
-  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io") & est > 0) %>% 
-  select("Younger sibling" = lhs, "Older sibling" = rhs, B = est, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
+as.data.frame(unclass(standardizedSolution(sibHA))) %>% 
+  filter(op == "~~" & lhs %in% c("sy", "iy") & rhs %in% c("so", "io")) %>% 
+  select("Younger sibling" = lhs, "Older sibling" = rhs, Beta = est.std, SE = se, Z = z, "p-value" = pvalue, "CI lower" = ci.lower, "CI upper" = ci.upper) %>% 
   knitr::kable(caption = "Correlated intercepts and slopes", digits = 6) %>% 
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
