@@ -19,9 +19,10 @@ set.seed(202104)
 libraries <- c("rio",          # import export
                "summarytools", # descriptive statistics
                "kableExtra",   # table formatting
-               "mice",         # missing pattern
+               "sjPlot",       # interaction plots
                "cowplot",      # plot arrangement
                "reshape2",     # reshape data wide long
+               "psych",        # factor analysis
                "lavaan",       # SEM
                "semPlot",      # SEM plots
                "tidyverse")    # general wrangling
@@ -53,6 +54,8 @@ si %>%
 #load data
 mpq <- rio::import(file = "./Data/SIBS_LONGITUDINAL_PERSONALITY_20210413.csv") %>% 
   select(-1)
+rel_IN <- rio::import(file = "./Data/rel_IN.sav")
+rel_FU1 <- rio::import(file = "./Data/rel_FU1.sav")
 
 #aggression items
 mpq$AG_IN <- mpq %>% 
@@ -110,28 +113,55 @@ mpq$HA_FU1[is.nan(mpq$HA_FU1)]<-NA
 mpq$HA_FU2[is.nan(mpq$HA_FU2)]<-NA
 mpq$HA_FU3[is.nan(mpq$HA_FU3)]<-NA
 
+# participants with relationship data at FU1 but not IN
+FU1_ID <- rel_FU1[which(!rel_FU1$ID %in% rel_IN$ID), "ID"]
+rel_FU1 <- rel_FU1 %>%
+  filter(ID %in% FU1_ID)
+
+# merge relationship data (IN for all, FU1 for those without IN data)
+mpq_IN <- mpq %>% filter(!ID %in% FU1_ID)
+mpq_FU1 <- mpq %>% filter(ID %in% FU1_ID)
+mpq_IN <- merge(mpq_IN, rel_IN, all.x = TRUE)
+mpq_FU1 <- merge(mpq_FU1, rel_FU1, all.x = TRUE)
+mpq <- rbind(mpq_IN, mpq_FU1)
+
+# reverse code some relationship items (into new items _R)
+#mpq <- mpq %>%
+#  mutate(S_ENURY_R = 6 - S_ENURY,
+#         S_YADME_R = 6 - S_YADME,
+#         S_EADMY_R = 6 - S_EADMY,
+#         S_EDOMY_R = 6 - S_EDOMY,
+#         S_AFFECT_R = 6 - S_AFFECT)
+
 #create wide dyad dataframe
 mpq <- mpq[order(mpq$ID),]
 mpq$P <- rep(c(1:2), length.out = nrow(mpq)) #person dummy var
 yo <- mpq %>% select(IDYRFAM, BDAY, P) %>% 
   mutate(BDAY = as.character(BDAY),
          P = as.character(P))
-yo <- reshape2::dcast(yo, IDYRFAM ~ P, value.var = "BDAY") #wide data with 2 siblings per row
+
+#wide data with 2 siblings per row
+yo <- reshape2::dcast(yo, IDYRFAM ~ P, value.var = "BDAY") 
 yo <- yo %>% mutate(`1` = as.Date(`1`),
                     `2` = as.Date(`2`))
 yo <- yo %>% mutate(older = ifelse(`1`<`2`, "P1", "P2")) %>% 
   select(IDYRFAM, older)
 mpq <- merge(mpq, yo)
+
+#y = younger, o = older
 mpq <- mpq %>% 
-  mutate(yo = ifelse(P == 1 & older == "P2" | P == 2 & older == "P1", "y", "o")) %>%  #y = younger, o = older
+  mutate(yo = ifelse(P == 1 & older == "P2" | 
+                     P == 2 & older == "P1", "y", "o")) %>%  
   select(-P, -older)
 
-young <- mpq %>%      #data with only younger sib
+#data with only younger sib
+young <- mpq %>%      
   filter(yo == "y")
 names(young) <- paste0(names(young), "_y", sep = "")
 young <- young %>% rename(IDYRFAM = IDYRFAM_y)
 
-old <- mpq %>%        #data with only older sib
+#data with only older sib
+old <- mpq %>%        
   filter(yo == "o")
 names(old) <- paste0(names(old), "_o", sep = "")
 old <- old %>% rename(IDYRFAM = IDYRFAM_o)
@@ -230,7 +260,7 @@ There are `r length(unique(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with at l
 There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with both siblings at intake, `r sum(duplicated(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r sum(duplicated(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r sum(duplicated(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
 
 
-# III. Main analyses
+# III. Analyses with 3 waves
 
 These analyses do NOT use data points at wave 3 (FU2) due to very high and non-random missingness of the study design. The supplementary analyses (section IV.) includes these data points for robustness checks. Missingness was too severe such that when grouping variables (e.g., adoption status) were added, some variables only have one observations across older siblings and as a result the models could not run.
 
@@ -796,8 +826,8 @@ There are `r nrow(yo[which(yo$samesex == 1),])` same-sex and `r nrow(yo[which(yo
 sexAG <- sem(lgmAG, data = yo, missing = "FIML",
                group = "samesex")
 
-#fitMeasures(sexAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
-#            output = "text")
+fitMeasures(sexAG, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
 
 # intercept and slope 
 as.data.frame(unclass(standardizedSolution(sexAG))) %>% 
@@ -827,8 +857,8 @@ as.data.frame(unclass(standardizedSolution(sexAG))) %>%
 sexCON <- sem(lgmCON, data = yo, missing = "FIML",
                 group = "samesex")
 
-#fitMeasures(sexCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
-#            output = "text")
+fitMeasures(sexCON, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
 
 # intercept and slope 
 as.data.frame(unclass(standardizedSolution(sexCON))) %>% 
@@ -859,8 +889,8 @@ as.data.frame(unclass(standardizedSolution(sexCON))) %>%
 sexHA <- sem(lgmHA, data = yo, missing = "FIML",
                 group = "samesex")
 
-#fitMeasures(sexHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
-#            output = "text")
+fitMeasures(sexHA, c("chisq", "df", "pvalue", "cfi", "rmsea", "srmr"), 
+            output = "text")
 
 # intercept and slope 
 as.data.frame(unclass(standardizedSolution(sexHA))) %>% 
@@ -884,11 +914,12 @@ as.data.frame(unclass(standardizedSolution(sexHA))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
 
-## Independent life events
 
-# IV. Supplementary analyses
+# IV. Analyses with full data
 
-## General change trajectories and correlated change
+## General change trajectories and correlated change with 4 waves
+
+These analyses analyzed the general change pattern using all 4 waves of data: IN, FU1, FU2, FU3. This is to compare with analyses in section III, which only included 3 waves, excluding FU2 for high missingness. Because these analyses made use of the maximum amount of data, they will be presented in reports and presentations for general change patterns.
 
 ### Aggression AG
 
@@ -1235,3 +1266,345 @@ as.data.frame(unclass(standardizedSolution(sibHA))) %>%
 
 semPaths(sibHA, what = "col", whatLabels = "est", intercepts = T)
 ```
+
+## Age gap
+
+Here, we examined whether a smaller age gap between siblings would result in higher correlated change patterns compared to siblings who are further apart in age.
+
+In order to fit the latent interaction model, factor scores for the latent intercepts and slopes are extracted from the LGM of general change using full data. All variables are then mean-centered.
+
+```{r age-data, warning = F, message = F}
+# descriptives
+yo$gap <- yo$IN_AGE_o - yo$IN_AGE_y
+yo$gap %>% 
+  descr(stats = "common", order = "p")
+
+# histogram
+ggplot(data = yo, aes(gap)) +
+  geom_histogram(binwidth = 0.1) + 
+  geom_vline(xintercept = mean(yo$gap, na.rm = T),
+             color = "red") +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(yo$gap, na.rm = T), 2),
+                          ", SD = ",round(sd(yo$gap, na.rm = T), 2)),
+           x = 4, y = 20) + 
+  labs(
+    title = "Distribution of Between-Sibling Age Gap",
+    x = "Age Gap (in years)",
+    y = NULL
+  ) +
+  theme_classic()
+```
+
+### Age gap - Aggression AG 
+
+Age gap did not moderate the relationship between sibling Aggression scores or change over time.
+
+```{r age-AG, warning = F, message = F}
+# extract latent intercepts and slopes
+ageAG <- lavPredict(sibAG) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+ageAG$gap <- yo$gap
+
+# scale all variables
+ageAG <- scale(ageAG, scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * gap, data = ageAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * gap, data = ageAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope ", digits = 3) %>% 
+  kable_styling()
+```
+
+### Age gap - Control CON
+
+Age gap did not moderate the relationship between sibling Control scores, but it did moderate their correlated change over time ($B = -0.075, SE = 0.035, t = -2.16, p = 0.031$). Siblings who are further apart in age showed more strongly negative correlated change in Control over time.
+
+```{r age-CON, warning = F, message = F}
+# extract latent intercepts and slopes
+ageCON <- lavPredict(sibCON) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+ageCON$gap <- yo$gap
+
+# scale all variables
+ageCON <- scale(ageCON, scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * gap, data = ageCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * gap, data = ageCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope ", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot at minimum and maximum age gap
+plot_model(lm(sy ~ so * gap, data = ageCON), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Change in Control over time") +
+  theme_classic()
+```
+
+### Age gap - Harm Avoidance HA
+
+Age gap did not moderate the relationship between sibling Harm Avoidance scores or change over time.
+
+Interestingly, age gap was a significant predictor of Harm Avoidance score such that younger siblings had higher average HA scores with higher between-sibling age gaps ($B = 0.038, SE = 0.014, t = 2.70, p = 0.007$ 
+)
+
+```{r age-HA, warning = F, message = F}
+# extract latent intercepts and slopes
+ageHA <- lavPredict(sibHA) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+ageHA$gap <- yo$gap
+
+# scale all variables
+ageHA <- scale(ageHA, scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * gap, data = ageHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * gap, data = ageHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance sllope ", digits = 3) %>% 
+  kable_styling()
+```
+
+## Relationship quality
+
+Sibling relationship was measured by the Sibling Relationship Questionnaire (SRQ; [Furman, & Buhrmester, 1985](https://www.jstor.org/stable/1129733)). The scale has 48 items. We excluded items 2, 18, 34 (subscale maternal partiality), and items 7, 23, 39 (subscale paternal partiality) during data collection. This was measured at the first two waves: IN and FU1. There are a total of 14 subscales, each with 3 items, and they can be organized into 3 (overlapping) factors. The original paper included a 4th factor, Rivalry, which consists of Competition and Parental partiality (which we did not measure).
+
+1. Warmth/Closeness:
+- Initimacy
+- Prosocial behavior
+- Companionship
+- Similarity
+- Nurturance of sibling
+- Nurturance by sibling
+- Admiration of sibling
+- Admiration by sibling
+- Affection
+
+2. Relative status/power:
+- Nurturance by sibling (R)
+- Nurturance of sibling
+- Admiration by sibling
+- Admiration of sibling (R)
+- Dominance by sibling (R)
+- Dominance over sibling
+
+3. Conflict:
+- Admiration by sibling (R)
+- Affection (R)
+- Dominance by sibling
+- Dominance over sibling
+- Quarreling
+- Antagonism
+- Competition
+
+
+```{r rela-data}
+# descriptives
+mpq %>% 
+  select(S_PROSOC:S_QUARR) %>% 
+  descr(stats = "common", order = "p")
+```
+
+We will use relationship quality data at intake for all participants. However, there are `r length(rel_FU1[which(!rel_FU1$ID %in% rel_IN$ID), "ID"])` participants who did not have relationship data at IN but had FU1 data that will be used instead.
+
+### Explanatory factor analysis
+
+We ran an explanatory factor analysis to examine the factor structure and extract factor scores
+
+```{r rela-efa}
+# younger siblings
+efa_y <- yo %>% 
+  select(IDYRFAM, starts_with("S_")) %>%
+  select(IDYRFAM, ends_with("_y")) %>%
+  na.omit()
+
+scree(efa_y[, -1], pc = FALSE, main = "Scree plot for younger siblings")
+
+efa_fit_y <- factanal(efa_y[, -1], 2, rotation = "promax", 
+                  score = "Bartlett")
+print(efa_fit_y$loadings, digits = 3, cutoff = 0.3, sort = T)
+
+# older siblings
+efa_o <- yo %>% 
+  select(IDYRFAM, starts_with("S_")) %>%
+  select(IDYRFAM, ends_with("_o")) %>%
+  na.omit()
+
+scree(efa_o[, -1], pc = FALSE, main = "Scree plot for older siblings")
+
+efa_fit_o <- factanal(efa_o[, -1], 2, rotation = "promax", 
+                  score = "Bartlett")
+print(efa_fit_o$loadings, digits = 3, cutoff = 0.3, sort = T)
+```
+
+### Relationship - Aggression AG
+
+```{r rela-AG, warning = F, message = F}
+#### younger siblings
+
+# merge rela scores with latent intercepts and slopes
+relaAG_y <- cbind(ageAG, yo$IDYRFAM)
+efa_y <- cbind(efa_y$IDYRFAM, efa_fit_y$scores)
+colnames(efa_y)[1] <- colnames(relaAG_y)[6] <- "IDYRFAM"
+relaAG_y <- merge(relaAG_y, efa_y)
+
+# scale all variables
+relaAG_y <- scale(relaAG_y[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * Factor1, data = relaAG_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * Factor2, data = relaAG_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor1, data = relaAG_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor2, data = relaAG_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope", digits = 3) %>% 
+  kable_styling()
+
+#### older siblings
+
+# merge rela scores with latent intercepts and slopes
+relaAG_o <- cbind(ageAG, yo$IDYRFAM)
+efa_o <- cbind(efa_o$IDYRFAM, efa_fit_o$scores)
+colnames(efa_o)[1] <- colnames(relaAG_o)[6] <- "IDYRFAM"
+relaAG_o <- merge(relaAG_o, efa_o)
+
+# scale all variables
+relaAG_o <- scale(relaAG_o[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * Factor1, data = relaAG_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Aggression intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * Factor2, data = relaAG_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Aggression intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor1, data = relaAG_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Aggression slope", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor2, data = relaAG_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Aggression slope", digits = 3) %>% 
+  kable_styling()
+```
+
+### Relationship - Control CON
+
+```{r rela-CON, warning = F, message = F}
+#### younger siblings
+
+# merge rela scores with latent intercepts and slopes
+relaCON_y <- cbind(ageCON, yo$IDYRFAM)
+colnames(relaCON_y)[6] <- "IDYRFAM"
+relaCON_y <- merge(relaCON_y, efa_y)
+
+# scale all variables
+relaCON_y <- scale(relaCON_y[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * Factor1, data = relaCON_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * Factor2, data = relaCON_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor1, data = relaCON_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor2, data = relaCON_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope", digits = 3) %>% 
+  kable_styling()
+
+#### older siblings
+
+# merge rela scores with latent intercepts and slopes
+relaCON_o <- cbind(ageCON, yo$IDYRFAM)
+colnames(relaCON_o)[6] <- "IDYRFAM"
+relaCON_o <- merge(relaCON_o, efa_o)
+
+# scale all variables
+relaCON_o <- scale(relaCON_o[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * Factor1, data = relaCON_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Control intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * Factor2, data = relaCON_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Control intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor1, data = relaCON_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Control slope", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor2, data = relaCON_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Control slope", digits = 3) %>% 
+  kable_styling()
+```
+
+
+### Relationship - Harm Avoidance HA
+
+```{r rela-HA, warning = F, message = F}
+#### younger siblings
+
+# merge rela scores with latent intercepts and slopes
+relaHA_y <- cbind(ageHA, yo$IDYRFAM)
+colnames(relaHA_y)[6] <- "IDYRFAM"
+relaHA_y <- merge(relaHA_y, efa_y)
+
+# scale all variables
+relaHA_y <- scale(relaHA_y[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * Factor1, data = relaHA_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * Factor2, data = relaHA_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor1, data = relaHA_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor2, data = relaHA_y))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope", digits = 3) %>% 
+  kable_styling()
+
+#### older siblings
+
+# merge rela scores with latent intercepts and slopes
+relaHA_o <- cbind(ageHA, yo$IDYRFAM)
+colnames(relaHA_o)[6] <- "IDYRFAM"
+relaHA_o <- merge(relaHA_o, efa_o)
+
+# scale all variables
+relaHA_o <- scale(relaHA_o[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * Factor1, data = relaHA_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Harm Avoidance intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * Factor2, data = relaHA_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Harm Avoidance intercept", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor1, data = relaHA_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Harm Avoidance slope", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * Factor2, data = relaHA_o))$coefficients %>%
+  knitr::kable(caption = "Predicting older siblings's Harm Avoidance slope", digits = 3) %>% 
+  kable_styling()
+```
+
+## Life events
+
