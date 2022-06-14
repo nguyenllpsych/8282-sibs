@@ -712,7 +712,7 @@ There are `r nrow(yo[which(yo$adopt == 1),])` adopted pairs and `r nrow(yo[which
 
 ### Adoption status - Aggression AG
 
-```{r adopt-AG, warning=FALSE, message=FALSE}
+```{r adopt-AG, warning=FALSE, message=FALSE, cache = T}
 adoptAG <- sem(lgmAG, data = yo, missing = "FIML",
                group = "adopt")
 
@@ -743,7 +743,7 @@ as.data.frame(unclass(standardizedSolution(adoptAG))) %>%
 
 ### Adoption status - Control CON
 
-```{r adopt-CON, warning=FALSE, message=FALSE}
+```{r adopt-CON, warning=FALSE, message=FALSE, cache = T}
 adoptCON <- sem(lgmCON, data = yo, missing = "FIML",
                 group = "adopt")
 
@@ -775,7 +775,7 @@ as.data.frame(unclass(standardizedSolution(adoptCON))) %>%
 
 ### Adoption status - Harm Avoidance HA
 
-```{r adopt-HA, warning=FALSE, message=FALSE}
+```{r adopt-HA, warning=FALSE, message=FALSE, cache = T}
 adoptHA <- sem(lgmHA, data = yo, missing = "FIML",
                 group = "adopt")
 
@@ -822,7 +822,7 @@ There are `r nrow(yo[which(yo$samesex == 1),])` same-sex and `r nrow(yo[which(yo
 
 ### Sex similarity - Aggression AG
 
-```{r sex-AG, warning=FALSE, message=FALSE}
+```{r sex-AG, warning=FALSE, message=FALSE, cache = T}
 sexAG <- sem(lgmAG, data = yo, missing = "FIML",
                group = "samesex")
 
@@ -853,7 +853,7 @@ as.data.frame(unclass(standardizedSolution(sexAG))) %>%
 
 ### Sex similarity - Control CON
 
-```{r sex-CON, warning=FALSE, message=FALSE}
+```{r sex-CON, warning=FALSE, message=FALSE, cache = T}
 sexCON <- sem(lgmCON, data = yo, missing = "FIML",
                 group = "samesex")
 
@@ -885,7 +885,7 @@ as.data.frame(unclass(standardizedSolution(sexCON))) %>%
 
 ### Sex similarity - Harm Avoidance HA
 
-```{r sex-HA, warning=FALSE, message=FALSE}
+```{r sex-HA, warning=FALSE, message=FALSE, cache = T}
 sexHA <- sem(lgmHA, data = yo, missing = "FIML",
                 group = "samesex")
 
@@ -1321,7 +1321,7 @@ summary(lm(sy ~ so * gap, data = ageAG))$coefficients %>%
 
 ### Age gap - Control CON
 
-Age gap did not moderate the relationship between sibling Control scores, but it did moderate their correlated change over time ($B = -0.075, SE = 0.035, t = -2.16, p = 0.031$). Siblings who are further apart in age showed more strongly negative correlated change in Control over time.
+Age gap did not moderate the relationship between sibling Control scores, but it did moderate their correlated change over time $(B = -0.075, SE = 0.035, t = -2.16, p = 0.031)$. Siblings who are further apart in age showed more strongly negative correlated change in Control over time.
 
 ```{r age-CON, warning = F, message = F}
 # extract latent intercepts and slopes
@@ -1353,8 +1353,7 @@ plot_model(lm(sy ~ so * gap, data = ageCON),
 
 Age gap did not moderate the relationship between sibling Harm Avoidance scores or change over time.
 
-Interestingly, age gap was a significant predictor of Harm Avoidance score such that younger siblings had higher average HA scores with higher between-sibling age gaps ($B = 0.038, SE = 0.014, t = 2.70, p = 0.007$ 
-)
+Interestingly, age gap was a significant predictor of Harm Avoidance score such that younger siblings had higher average HA scores with higher between-sibling age gaps $(B = 0.038, SE = 0.014, t = 2.70, p = 0.007)$.
 
 ```{r age-HA, warning = F, message = F}
 # extract latent intercepts and slopes
@@ -1419,7 +1418,11 @@ We will use relationship quality data at intake for all participants. However, t
 
 ### Explanatory factor analysis
 
-We ran an explanatory factor analysis to examine the factor structure and extract factor scores
+We ran an explanatory factor analysis to examine the factor structure and extract factor scores.
+
+This resulted in two main factors, similarly for younger and older siblings:
+
+Factor 1 resembles the original paper's Warmth/Closeness; Factor 2 resembles Conflict.
 
 ```{r rela-efa}
 # younger siblings
@@ -1449,7 +1452,15 @@ print(efa_fit_o$loadings, digits = 3, cutoff = 0.3, sort = T)
 
 ### Relationship - Aggression AG
 
-```{r rela-AG, warning = F, message = F}
+#### 1. Using younger sibling's relationship ratings:
+
+There were significant interaction effects between relationship quality and sibling similarity in Aggression, but not in changes in Aggression over time. 
+
+In particular, there was a stronger between-sibling correlation in Aggression when the younger sibling indicated higher Warmth/Closeness scores, $B = 0.081, SE = 0.030, t =	2.724, p = 0.007$. Interestingly, between-sibling correlation in Aggression was also stronger when the younger sibling indicated higher Conflict scores, $B = 0.057,	SE = 0.028, t =	2.057, p =	0.040$.
+
+Further, younger sibling's Conflict scores were associated with their own higher Aggression intercept $(B = 0.088, SE = 0.014, t =  6.234, p < 0.001)$ and slower decrease in Aggression over time $(B = -0.003, SE = =.001, t = -5.097, p <	0.001)$.
+
+```{r rela-AG-young, warning = F, message = F}
 #### younger siblings
 
 # merge rela scores with latent intercepts and slopes
@@ -1463,18 +1474,36 @@ relaAG_y <- scale(relaAG_y[, -1], scale = F) %>% as.data.frame()
 
 # moderation
 summary(lm(iy ~ io * Factor1, data = relaAG_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Aggression intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept using younger sibling's Warmth ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(iy ~ io * Factor2, data = relaAG_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Aggression intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept using younger sibling's Conflict ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor1, data = relaAG_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Aggression slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope using younger sibling's Warmth ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor2, data = relaAG_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Aggression slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope using younger sibling's Conflict ratings", digits = 3) %>% 
   kable_styling()
 
+# interaction plot at minimum and maximum relationship ratings
+plot_model(lm(iy ~ io * Factor1, data = relaAG_y), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Aggression intercept using younger sibling's Warmth ratings") +
+  theme_classic()
+plot_model(lm(iy ~ io * Factor2, data = relaAG_y), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Aggression intercept using younger sibling's Conflict ratings") +
+  theme_classic()
+```
+
+#### 2. Using older sibling's relationship ratings:
+
+Results were different when we used older sibling's relationship ratings. The only significant interaction effect was to predict Aggression intercept. In particular, there was a higher between-sibling correlation in Aggression when the older sibling provided higher Warmth scores, $B = 0.104, SE = 0.031, t = 3.303, p = 0.001$. Older siblings' ratings of Warmth and Conflict did not have any association with correlated change in Aggression.
+
+```{r rela-AG-old, warning = F, message = F}
 #### older siblings
 
 # merge rela scores with latent intercepts and slopes
@@ -1488,22 +1517,36 @@ relaAG_o <- scale(relaAG_o[, -1], scale = F) %>% as.data.frame()
 
 # moderation
 summary(lm(iy ~ io * Factor1, data = relaAG_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Aggression intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept using older sibling's Warmth ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(iy ~ io * Factor2, data = relaAG_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Aggression intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept using older sibling's Conflict ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor1, data = relaAG_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Aggression slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope using older sibling's Warmth ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor2, data = relaAG_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Aggression slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope using older sibling's Conflict ratings", digits = 3) %>% 
   kable_styling()
+
+# interaction plot at minimum and maximum relationship ratings
+plot_model(lm(iy ~ io * Factor1, data = relaAG_o), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Aggression intercept using older sibling's Warmth ratings") +
+  theme_classic()
 ```
+
 
 ### Relationship - Control CON
 
-```{r rela-CON, warning = F, message = F}
+#### 1. Using younger sibling's relationship ratings:
+
+Relationship quality, as rated by the younger siblings, had no association with between-sibling correlation in Control scores or changes in Control over time. 
+
+Younger siblings' ratings of Warmth was associated with higher intercepts of their own Control scores $(B = 0.036, SE = 0.010, t = 3.478, p = 0.001)$ but also a slower increase in their Control scores over time $(B = -0.001, SE = 0.00, t =	-2.036, p =	0.042)$.
+
+```{r rela-CON-young, warning = F, message = F}
 #### younger siblings
 
 # merge rela scores with latent intercepts and slopes
@@ -1516,18 +1559,24 @@ relaCON_y <- scale(relaCON_y[, -1], scale = F) %>% as.data.frame()
 
 # moderation
 summary(lm(iy ~ io * Factor1, data = relaCON_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Control intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control intercept using younger sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(iy ~ io * Factor2, data = relaCON_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Control intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control intercept using younger sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor1, data = relaCON_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Control slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control slope using younger sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor2, data = relaCON_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Control slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control slope using younger sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
+```
 
+#### 2. Using older sibling's relationship ratings:
+
+Similarly to younger siblings' ratings, older siblings' ratings of relationship quality had no association with between-sibling correlation in Control scores or changes in Control over time. 
+
+```{r rela-CON-old, warning = F, message = F}
 #### older siblings
 
 # merge rela scores with latent intercepts and slopes
@@ -1540,21 +1589,22 @@ relaCON_o <- scale(relaCON_o[, -1], scale = F) %>% as.data.frame()
 
 # moderation
 summary(lm(iy ~ io * Factor1, data = relaCON_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Control intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control intercept using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(iy ~ io * Factor2, data = relaCON_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Control intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control intercept using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor1, data = relaCON_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Control slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control slope using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor2, data = relaCON_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Control slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Control slope using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 ```
 
-
 ### Relationship - Harm Avoidance HA
+
+There was absolutely no main or interaction effects involving relationship quality in predicting Harm Avoidance intercepts or slopes.
 
 ```{r rela-HA, warning = F, message = F}
 #### younger siblings
@@ -1569,16 +1619,16 @@ relaHA_y <- scale(relaHA_y[, -1], scale = F) %>% as.data.frame()
 
 # moderation
 summary(lm(iy ~ io * Factor1, data = relaHA_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(iy ~ io * Factor2, data = relaHA_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor1, data = relaHA_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor2, data = relaHA_y))$coefficients %>%
-  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 
 #### older siblings
@@ -1593,16 +1643,16 @@ relaHA_o <- scale(relaHA_o[, -1], scale = F) %>% as.data.frame()
 
 # moderation
 summary(lm(iy ~ io * Factor1, data = relaHA_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Harm Avoidance intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(iy ~ io * Factor2, data = relaHA_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Harm Avoidance intercept", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor1, data = relaHA_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Harm Avoidance slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 summary(lm(sy ~ so * Factor2, data = relaHA_o))$coefficients %>%
-  knitr::kable(caption = "Predicting older siblings's Harm Avoidance slope", digits = 3) %>% 
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope using older sibling's relationship ratings", digits = 3) %>% 
   kable_styling()
 ```
 
