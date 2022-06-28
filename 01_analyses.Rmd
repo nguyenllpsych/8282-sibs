@@ -17,7 +17,9 @@ set.seed(202104)
 
 # load libraries
 libraries <- c("rio",          # import export
+               "labelled",     # var_label
                "summarytools", # descriptive statistics
+               "likert",       # likert plot
                "kableExtra",   # table formatting
                "sjPlot",       # interaction plots
                "cowplot",      # plot arrangement
@@ -56,6 +58,8 @@ mpq <- rio::import(file = "./Data/SIBS_LONGITUDINAL_PERSONALITY_20210413.csv") %
   select(-1)
 rel_IN <- rio::import(file = "./Data/rel_IN.sav")
 rel_FU1 <- rio::import(file = "./Data/rel_FU1.sav")
+lei <- rio::import(file = './Data/lei.sav')
+lei[is.na(lei)] <- 0
 
 #aggression items
 mpq$AG_IN <- mpq %>% 
@@ -125,6 +129,9 @@ mpq_IN <- merge(mpq_IN, rel_IN, all.x = TRUE)
 mpq_FU1 <- merge(mpq_FU1, rel_FU1, all.x = TRUE)
 mpq <- rbind(mpq_IN, mpq_FU1)
 
+# merge life events data
+mpq <- merge(mpq, lei, all.x = TRUE)
+
 # reverse code some relationship items (into new items _R)
 #mpq <- mpq %>%
 #  mutate(S_ENURY_R = 6 - S_ENURY,
@@ -181,9 +188,9 @@ mpq %>%
 
 The average time between assessments is:
 
-- Between intake and follow-up 1: `r as.numeric(mean(as.Date(mpq$NCDATE_FU1) - as.Date(mpq$NCDATE_IN), na.rm = T))/365` years.
-- Between follow-up 1 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU2) - as.Date(mpq$NCDATE_FU1), na.rm = T))/365` years.
-- Between follow-up 3 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU3) - as.Date(mpq$NCDATE_FU2), na.rm = T))/365` years.
+-   Between intake and follow-up 1: `r as.numeric(mean(as.Date(mpq$NCDATE_FU1) - as.Date(mpq$NCDATE_IN), na.rm = T))/365` years.
+-   Between follow-up 1 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU2) - as.Date(mpq$NCDATE_FU1), na.rm = T))/365` years.
+-   Between follow-up 3 and follow-up 2: `r as.numeric(mean(as.Date(mpq$NCDATE_FU3) - as.Date(mpq$NCDATE_FU2), na.rm = T))/365` years.
 
 ### Scale scores
 
@@ -253,12 +260,11 @@ cowplot::plot_grid(pAG, paAG,
 rm(sample, pAG, paAG, pCON, paCON, pHA, paHA)
 ```
 
-There are `r 1231 - sum(is.na(mpq$AG_IN))` participants with complete responses at intake, `r 1231 - sum(is.na(mpq$AG_FU1))` at follow-up 1, `r 1231 - sum(is.na(mpq$AG_FU2))`  at follow-up 2, and `r 1231 - sum(is.na(mpq$AG_FU3))` at follow-up 3.
+There are `r 1231 - sum(is.na(mpq$AG_IN))` participants with complete responses at intake, `r 1231 - sum(is.na(mpq$AG_FU1))` at follow-up 1, `r 1231 - sum(is.na(mpq$AG_FU2))` at follow-up 2, and `r 1231 - sum(is.na(mpq$AG_FU3))` at follow-up 3.
 
 There are `r length(unique(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with at least 1 sibling at intake, `r length(unique(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r length(unique(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r length(unique(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
 
 There are `r sum(duplicated(mpq[!is.na(mpq$AG_IN),]$IDYRFAM))` families with both siblings at intake, `r sum(duplicated(mpq[!is.na(mpq$AG_FU1),]$IDYRFAM))` at follow-up 1, `r sum(duplicated(mpq[!is.na(mpq$AG_FU2),]$IDYRFAM))` at follow-up 2, and `r sum(duplicated(mpq[!is.na(mpq$AG_FU3),]$IDYRFAM))` at follow-up 3.
-
 
 # III. Analyses with 3 waves
 
@@ -391,10 +397,9 @@ for (row in seq(nrow(yo))) {
 
 For SEM analyses of each personality variable, the three parcels were randomized to contain items numbered:
 
-- Parcel 1: `r paste0(sort(par1))`
-- Parcel 2: `r paste0(sort(par2))`
-- Parcel 3: `r paste0(sort(par3))`
-
+-   Parcel 1: `r paste0(sort(par1))`
+-   Parcel 2: `r paste0(sort(par2))`
+-   Parcel 3: `r paste0(sort(par3))`
 
 ## General change trajectories and correlated change
 
@@ -502,7 +507,6 @@ as.data.frame(unclass(standardizedSolution(sibAG))) %>%
 semPaths(sibAG, what = "col", whatLabels = "est", intercepts = T)
 ```
 
-
 ### Control CON
 
 ```{r lgm-CON, warning = F, cache = T}
@@ -598,7 +602,6 @@ as.data.frame(unclass(standardizedSolution(sibCON))) %>%
 
 semPaths(sibCON, what = "col", whatLabels = "est", intercepts = T)
 ```
-
 
 ### Harm Avoidance HA
 
@@ -698,9 +701,9 @@ semPaths(sibHA, what = "col", whatLabels = "est", intercepts = T)
 
 ## Adopted vs. Non-adopted
 
-Here we compare between-sibling correlations in adopted vs. non-adopted sibling pairs. 
+Here we compare between-sibling correlations in adopted vs. non-adopted sibling pairs.
 
-Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation. 
+Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation.
 
 ```{r}
 # create adopted/bio variable
@@ -740,7 +743,6 @@ as.data.frame(unclass(standardizedSolution(adoptAG))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
 
-
 ### Adoption status - Control CON
 
 ```{r adopt-CON, warning=FALSE, message=FALSE, cache = T}
@@ -771,7 +773,6 @@ as.data.frame(unclass(standardizedSolution(adoptCON))) %>%
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
-
 
 ### Adoption status - Harm Avoidance HA
 
@@ -804,12 +805,11 @@ as.data.frame(unclass(standardizedSolution(adoptHA))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
 
-
-## Same-sex vs. Opposite-sex 
+## Same-sex vs. Opposite-sex
 
 Here we compare between-sibling correlations in same-sex and opposite-sex pairs.
 
-Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation. 
+Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation.
 
 ```{r}
 # create same/opposite sex variable
@@ -818,7 +818,6 @@ yo <- yo %>%
 ```
 
 There are `r nrow(yo[which(yo$samesex == 1),])` same-sex and `r nrow(yo[which(yo$samesex == 0),])` opposite-sex sibling pairs.
-
 
 ### Sex similarity - Aggression AG
 
@@ -849,7 +848,6 @@ as.data.frame(unclass(standardizedSolution(sexAG))) %>%
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
-
 
 ### Sex similarity - Control CON
 
@@ -882,7 +880,6 @@ as.data.frame(unclass(standardizedSolution(sexCON))) %>%
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
 
-
 ### Sex similarity - Harm Avoidance HA
 
 ```{r sex-HA, warning=FALSE, message=FALSE, cache = T}
@@ -913,7 +910,6 @@ as.data.frame(unclass(standardizedSolution(sexHA))) %>%
   kable_styling() %>% 
   footnote(general = "i = intercept, s = slope, o = older sibling, y = younger sibling")
 ```
-
 
 # IV. Analyses with full data
 
@@ -1041,7 +1037,6 @@ as.data.frame(unclass(standardizedSolution(sibAG))) %>%
 semPaths(sibAG, what = "col", whatLabels = "est", intercepts = T)
 ```
 
-
 ### Control CON
 
 ```{r lgm-CON-full, warning = F, cache = T}
@@ -1153,7 +1148,6 @@ as.data.frame(unclass(standardizedSolution(sibCON))) %>%
 
 semPaths(sibCON, what = "col", whatLabels = "est", intercepts = T)
 ```
-
 
 ### Harm Avoidance HA
 
@@ -1296,7 +1290,7 @@ ggplot(data = yo, aes(gap)) +
   theme_classic()
 ```
 
-### Age gap - Aggression AG 
+### Age gap - Aggression AG
 
 Age gap did not moderate the relationship between sibling Aggression scores or change over time.
 
@@ -1378,34 +1372,36 @@ summary(lm(sy ~ so * gap, data = ageHA))$coefficients %>%
 
 Sibling relationship was measured by the Sibling Relationship Questionnaire (SRQ; [Furman, & Buhrmester, 1985](https://www.jstor.org/stable/1129733)). The scale has 48 items. We excluded items 2, 18, 34 (subscale maternal partiality), and items 7, 23, 39 (subscale paternal partiality) during data collection. This was measured at the first two waves: IN and FU1. There are a total of 14 subscales, each with 3 items, and they can be organized into 3 (overlapping) factors. The original paper included a 4th factor, Rivalry, which consists of Competition and Parental partiality (which we did not measure).
 
-1. Warmth/Closeness:
-- Initimacy
-- Prosocial behavior
-- Companionship
-- Similarity
-- Nurturance of sibling
-- Nurturance by sibling
-- Admiration of sibling
-- Admiration by sibling
-- Affection
+1.  Warmth/Closeness:
 
-2. Relative status/power:
-- Nurturance by sibling (R)
-- Nurturance of sibling
-- Admiration by sibling
-- Admiration of sibling (R)
-- Dominance by sibling (R)
-- Dominance over sibling
+-   Initimacy
+-   Prosocial behavior
+-   Companionship
+-   Similarity
+-   Nurturance of sibling
+-   Nurturance by sibling
+-   Admiration of sibling
+-   Admiration by sibling
+-   Affection
 
-3. Conflict:
-- Admiration by sibling (R)
-- Affection (R)
-- Dominance by sibling
-- Dominance over sibling
-- Quarreling
-- Antagonism
-- Competition
+2.  Relative status/power:
 
+-   Nurturance by sibling (R)
+-   Nurturance of sibling
+-   Admiration by sibling
+-   Admiration of sibling (R)
+-   Dominance by sibling (R)
+-   Dominance over sibling
+
+3.  Conflict:
+
+-   Admiration by sibling (R)
+-   Affection (R)
+-   Dominance by sibling
+-   Dominance over sibling
+-   Quarreling
+-   Antagonism
+-   Competition
 
 ```{r rela-data}
 # descriptives
@@ -1454,11 +1450,11 @@ print(efa_fit_o$loadings, digits = 3, cutoff = 0.3, sort = T)
 
 #### 1. Using younger sibling's relationship ratings:
 
-There were significant interaction effects between relationship quality and sibling similarity in Aggression, but not in changes in Aggression over time. 
+There were significant interaction effects between relationship quality and sibling similarity in Aggression, but not in changes in Aggression over time.
 
-In particular, there was a stronger between-sibling correlation in Aggression when the younger sibling indicated higher Warmth/Closeness scores, $B = 0.081, SE = 0.030, t =	2.724, p = 0.007$. Interestingly, between-sibling correlation in Aggression was also stronger when the younger sibling indicated higher Conflict scores, $B = 0.057,	SE = 0.028, t =	2.057, p =	0.040$.
+In particular, there was a stronger between-sibling correlation in Aggression when the younger sibling indicated higher Warmth/Closeness scores, $B = 0.081, SE = 0.030, t = 2.724, p = 0.007$. Interestingly, between-sibling correlation in Aggression was also stronger when the younger sibling indicated higher Conflict scores, $B = 0.057, SE = 0.028, t = 2.057, p = 0.040$.
 
-Further, younger sibling's Conflict scores were associated with their own higher Aggression intercept $(B = 0.088, SE = 0.014, t =  6.234, p < 0.001)$ and slower decrease in Aggression over time $(B = -0.003, SE = =.001, t = -5.097, p <	0.001)$.
+Further, younger sibling's Conflict scores were associated with their own higher Aggression intercept $(B = 0.088, SE = 0.014, t = 6.234, p < 0.001)$ and slower decrease in Aggression over time $(B = -0.003, SE = =.001, t = -5.097, p < 0.001)$.
 
 ```{r rela-AG-young, warning = F, message = F}
 #### younger siblings
@@ -1537,14 +1533,13 @@ plot_model(lm(iy ~ io * Factor1, data = relaAG_o),
   theme_classic()
 ```
 
-
 ### Relationship - Control CON
 
 #### 1. Using younger sibling's relationship ratings:
 
-Relationship quality, as rated by the younger siblings, had no association with between-sibling correlation in Control scores or changes in Control over time. 
+Relationship quality, as rated by the younger siblings, had no association with between-sibling correlation in Control scores or changes in Control over time.
 
-Younger siblings' ratings of Warmth was associated with higher intercepts of their own Control scores $(B = 0.036, SE = 0.010, t = 3.478, p = 0.001)$ but also a slower increase in their Control scores over time $(B = -0.001, SE = 0.00, t =	-2.036, p =	0.042)$.
+Younger siblings' ratings of Warmth was associated with higher intercepts of their own Control scores $(B = 0.036, SE = 0.010, t = 3.478, p = 0.001)$ but also a slower increase in their Control scores over time $(B = -0.001, SE = 0.00, t = -2.036, p = 0.042)$.
 
 ```{r rela-CON-young, warning = F, message = F}
 #### younger siblings
@@ -1574,7 +1569,7 @@ summary(lm(sy ~ so * Factor2, data = relaCON_y))$coefficients %>%
 
 #### 2. Using older sibling's relationship ratings:
 
-Similarly to younger siblings' ratings, older siblings' ratings of relationship quality had no association with between-sibling correlation in Control scores or changes in Control over time. 
+Similarly to younger siblings' ratings, older siblings' ratings of relationship quality had no association with between-sibling correlation in Control scores or changes in Control over time.
 
 ```{r rela-CON-old, warning = F, message = F}
 #### older siblings
@@ -1658,3 +1653,255 @@ summary(lm(sy ~ so * Factor2, data = relaHA_o))$coefficients %>%
 
 ## Life events
 
+Life events data were collected from a Life Event Interview at intake, follow-up 1, and follow-up 2. These events were categorized into 3 groups following previous research by[Billig et al., 1996](https://link.springer.com/article/10.1007/BF02361227):
+
+```{r lei-data, warning = F, cache = T}
+# discrepancy count between siblings
+fam_list <- c("Q1B","Q3A","Q10","Q11A","Q17","Q17A","Q18B", 
+              "Q19AP","Q20AP","Q21A","Q21B","Q15","Q22S","Q35",
+              "Q41D","Q49A","Q49B","Q41C","Q22P","Q43F","Q46P")
+inf_list <- c("Q7","Q8","Q9","Q24","Q25","Q26","Q27",  
+              "Q29E","Q51B")
+ninf_list <- c("Q4A","Q5","Q6A","Q14B","Q20B","Q28B1","Q29B",
+               "Q29C","Q29D","Q38B","Q38H","Q38C","Q13","Q30A",
+               "Q31","Q16F","Q16D","Q16B")
+
+count <- vector(mode = "numeric", length = nrow(yo))
+for(i in c(inf_list, ninf_list)){
+  current <- yo %>% select(starts_with(i))
+  count <- count + as.numeric(current[,1] == current[,2])
+}
+yo$lei_shared <- count
+
+# descriptives
+fam <- lei %>%
+  select(all_of(fam_list))
+inf <- lei %>%
+  select(all_of(inf_list))
+ninf <- lei %>%
+  select(all_of(ninf_list))
+colnames(fam) <- var_label(fam)
+colnames(inf) <- var_label(inf)
+colnames(ninf) <- var_label(ninf)
+fam <- fam %>%
+  mutate_all(.funs = function(x){
+  factor(x, levels = c(0:1), 
+         labels = c("No", "Yes"))
+})
+inf <- inf %>%
+  mutate_all(.funs = function(x){
+  factor(x, levels = c(0:1), 
+         labels = c("No", "Yes"))
+})
+ninf <- ninf %>%
+  mutate_all(.funs = function(x){
+  factor(x, levels = c(0:1), 
+         labels = c("No", "Yes"))
+})
+```
+
+1. Family related events (FAM): events that happened to the family or to individuals within the family
+
+```{r FAM-plot}
+ggplot(data = lei, aes(FAM)) +
+  geom_histogram(binwidth = 1) + 
+  geom_vline(xintercept = mean(lei$FAM, na.rm = T),
+             color = "red") +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(lei$FAM, na.rm = T), 2),
+                          ", SD = ",round(sd(lei$FAM, na.rm = T), 2)),
+           x = 10, y = 150) + 
+  labs(
+    title = "Distribution of Family-Related Events",
+    x = "Count of events",
+    y = NULL
+  ) +
+  theme_classic()
+
+plot(likert(fam))
+```
+
+2. Independent non-family events (INF): non-family events that were independent of the respondent's behavior
+
+```{r INF-plot}
+ggplot(data = lei, aes(INF)) +
+  geom_histogram(binwidth = 1) + 
+  geom_vline(xintercept = mean(lei$INF, na.rm = T),
+             color = "red") +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(lei$INF, na.rm = T), 2),
+                          ", SD = ",round(sd(lei$INF, na.rm = T), 2)),
+           x = 7.5, y = 150) + 
+  labs(
+    title = "Distribution of Independent Non-Family Events",
+    x = "Count of events",
+    y = NULL
+  ) +
+  theme_classic()
+
+plot(likert(inf))
+```
+
+
+3. Non-independent non-family events (NINF): non-family events in which the respondent's behavior may have influenced whether or not the event occurred
+
+```{r NINF-plot}
+ggplot(data = lei, aes(NINF)) +
+  geom_histogram(binwidth = 1) + 
+  geom_vline(xintercept = mean(lei$NINF, na.rm = T),
+             color = "red") +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(lei$NINF, na.rm = T), 2),
+                          ", SD = ",round(sd(lei$NINF, na.rm = T), 2)),
+           x = 10, y = 150) + 
+  labs(
+    title = "Distribution of Non-Independent Non-Family Events",
+    x = "Count of events",
+    y = NULL
+  ) +
+  theme_classic()
+
+plot(likert(ninf))
+```
+
+In the following analyses, we used the number of family-related events (as reported by the older siblings), as well as the count of similar non-family events that the siblings both experienced.
+
+```{r lei_shared, warning = F}
+ggplot(data = yo, aes(lei_shared)) +
+  geom_histogram(binwidth = 1) + 
+  geom_vline(xintercept = mean(yo$lei_shared, na.rm = T),
+             color = "red") +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(yo$lei_shared, na.rm = T), 2),
+                          ", SD = ",round(sd(yo$lei_shared, na.rm = T), 2)),
+           x = 15, y = 50) + 
+  labs(
+    title = "Distribution of Similar Non-Family Events",
+    x = "Count of events",
+    y = NULL
+  ) +
+  theme_classic()
+```
+
+### Life events - Aggression AG
+
+There were significant interaction effects between family-related events and sibling similarity in changes in Aggression over time.
+
+In particular, there was a stronger between-sibling correlation in Aggression development when there were more family-related events reported, $B = 0.031, SE = 0.012, t = 2.584, p = 0.010$.
+
+Further, interestingly, there were significant main effects between life events and Aggression (in younger siblings) such that:
+
+- Family-related events were associated with higher Aggression intercept $(B = 0.033, SE = 0.006, t = 5.730, p < 0.001)$ and faster decrease in Aggression $(B = -0.001, SE = 0.000, t = -2.750, p = 0.006)$
+- Similarity in non-family events were associated with lower Aggression intercept $(B = -0.025, SE =	0.005	t = -4.696, p <	0.001)$ and slower decrease in Aggression $(B = 0.000, SE = 0.000, t = -2.001, p = 0.046)$
+
+```{r lei-AG, warning = F, message = F}
+# merge lei counts with latent intercepts and slopes
+leiAG <- cbind(select(ageAG, c(io,iy,so,sy)), yo$IDYRFAM)
+colnames(leiAG)[5] <- "IDYRFAM"
+leiAG <- merge(leiAG, select(yo, c(IDYRFAM, FAM_o, lei_shared)))
+
+# scale all variables
+leiAG <- scale(leiAG[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * FAM_o, data = leiAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept using count of family-related events", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * lei_shared, data = leiAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept using count of similar non-family events", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * FAM_o, data = leiAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope using count of family-related events", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * lei_shared, data = leiAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope using count of similar non-family events", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot at minimum and maximum family events
+plot_model(lm(sy ~ so * FAM_o, data = leiAG), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Aggression slope using count of family-related events") +
+  theme_classic()
+```
+
+### Life events - Control CON
+
+There were no interaction effects between life events and between-sibling correlations in Control or changes in Control over time. 
+
+Similarly to Aggression, however, there were significant main effects of life events on Control such that:
+
+- Family-related events were associated with lower Control intercept $(B = -0.018, SE = 0.004, t = -4.323, p < 0.001)$ and faster increase in Control $(B = 0.000, SE = 0.000, t = 3.173, p = 0.002)$
+- Similarity in non-family events were associated with higher Control intercept $(B = 0.015, SE =	0.004,	t = 3.937, p < 0.001)$ and slower increase in Control $(B = 0.000, SE = 0.000, t = -4.049, p < 0.001)$.
+
+```{r lei-CON, warning = F, message = F}
+# merge lei counts with latent intercepts and slopes
+leiCON <- cbind(select(ageCON, c(io,iy,so,sy)), yo$IDYRFAM)
+colnames(leiCON)[5] <- "IDYRFAM"
+leiCON <- merge(leiCON, select(yo, c(IDYRFAM, FAM_o, lei_shared)))
+
+# scale all variables
+leiCON <- scale(leiCON[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * FAM_o, data = leiCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept using count of family-related events", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * lei_shared, data = leiCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept using count of similar non-family events", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * FAM_o, data = leiCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope using count of family-related events", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * lei_shared, data = leiCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope using count of similar non-family events", digits = 3) %>% 
+  kable_styling()
+```
+
+### Life events - Harm Avoidance HA
+
+Similarity in non-family events significantly moderated between-sibling correlation in both intercepts and slopes of Harm Avoidance.
+
+In particular, siblings with more similar non-family events were more similar in Harm Avoidance intercept $(B = 0.024, SE = 0.010, t = 2.494, p = 0.013)$ and slope $(B = 0.030, SE = 0.015, t = 2.016, p = 0.044)$.
+
+There were significant main effects of life events on changes in Harm Avoidance overtime such that:
+
+- Family-related events were associated with faster increase in Harm Avoidance Control $(B = 0.001, SE = 0.000, t = 2.408, p = 0.016)$
+- Similarity in non-family events were associated with slower increase in Harm Avoidance $(B = -0.001, SE =	0.000,	t = -2.682, p = 0.008)$.
+
+```{r lei-HA, warning = F, message = F}
+# merge lei counts with latent intercepts and slopes
+leiHA <- cbind(select(ageHA, c(io,iy,so,sy)), yo$IDYRFAM)
+colnames(leiHA)[5] <- "IDYRFAM"
+leiHA <- merge(leiHA, select(yo, c(IDYRFAM, FAM_o, lei_shared)))
+
+# scale all variables
+leiHA <- scale(leiHA[, -1], scale = F) %>% as.data.frame()
+
+# moderation
+summary(lm(iy ~ io * FAM_o, data = leiHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept using count of family-related events", digits = 3) %>% 
+  kable_styling()
+summary(lm(iy ~ io * lei_shared, data = leiHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept using count of similar non-family events", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * FAM_o, data = leiHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope using count of family-related events", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * lei_shared, data = leiHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope using count of similar non-family events", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot at minimum and maximum family events
+plot_model(lm(iy ~ io * lei_shared, data = leiHA), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Harm Avoidance intercept using count of similar non-family events") +
+  theme_classic()
+
+plot_model(lm(sy ~ so * lei_shared, data = leiHA), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Harm Avoidance slope using count of similar non-family events") +
+  theme_classic()
+```
