@@ -179,11 +179,70 @@ rm(young, old)
 
 ### Demographics
 
-```{r demo, results = "asis"}
+```{r demo, results = "asis", warning = FALSE, message = FALSE}
 #descriptives
 mpq %>% 
   select(IDSEX:FU3_AGE) %>% 
   descr(stats = "common", order = "p")
+
+# graphs: continuous
+ggplot(data = yo, aes(IN_AGE_y)) +
+  geom_histogram(binwidth = 0.2, fill = "#710c0c") + 
+  geom_vline(xintercept = mean(yo$IN_AGE_y, na.rm = T),
+             color = "#f1c232", size = 1) +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(yo$IN_AGE_y, na.rm = T), 2),
+                          ", SD = ",round(sd(yo$IN_AGE_y, na.rm = T), 2)),
+           x = 17, y = 25) + 
+  labs(
+    title = "Distribution of younger sibling's age at intake",
+    x = "Age (in years)",
+    y = NULL
+  ) +
+  theme_classic()
+
+ggplot(data = yo, aes(IN_AGE_o)) +
+  geom_histogram(binwidth = 0.2, fill = "#710c0c") + 
+  geom_vline(xintercept = mean(yo$IN_AGE_o, na.rm = T),
+             color = "#f1c232", size = 1) +
+  annotate("text", 
+           label = paste0("Mean = ", round(mean(yo$IN_AGE_o, na.rm = T), 2),
+                          ", SD = ",round(sd(yo$IN_AGE_o, na.rm = T), 2)),
+           x = 18, y = 35) + 
+  labs(
+    title = "Distribution of older sibling's age at intake",
+    x = "Age (in years)",
+    y = NULL
+  ) +
+  theme_classic()
+
+# graphs: discrete
+ggplot(mpq, 
+       aes(factor(mpq$IDAB,
+                  levels = c(1, 2),
+                  labels = c("Adoptive", "Non-Adoptive")))) + 
+  geom_bar(fill = c("#710c0c", "#f1c232")) + 
+  geom_text(stat='count', aes(label=..count..), vjust = -1) + 
+  labs(
+    title = "Count of adoption status",
+    x = NULL
+  ) +
+  ylim(0, 700) +
+  theme_classic()
+
+ggplot(mpq, 
+       aes(factor(mpq$IDSEX,
+                  levels = c(1, 2),
+                  labels = c("Male", "Female")))) + 
+  geom_bar(fill = c("#f1c232", "#710c0c")) + 
+  geom_text(stat='count', aes(label=..count..), vjust = -1) + 
+  labs(
+    title = "Count of sex",
+    x = NULL
+  ) +
+  ylim(0, 700) +
+  theme_classic()
+
 ```
 
 The average time between assessments is:
@@ -705,10 +764,24 @@ Here we compare between-sibling correlations in adopted vs. non-adopted sibling 
 
 Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation.
 
-```{r}
+```{r adtop-data, warning = F, message = F}
 # create adopted/bio variable
 yo <- yo %>% 
   mutate(adopt = ifelse(IDAB_y == 1 | IDAB_o == 1, 1, 0))
+
+# histogram
+ggplot(yo, 
+       aes(factor(yo$adopt,
+                  levels = c(0, 1),
+                  labels = c("Non-Adoptive", "Adoptive")))) + 
+  geom_bar(fill = c("#710c0c", "#f1c232")) + 
+  geom_text(stat='count', aes(label=..count..), vjust = -1) + 
+  labs(
+    title = "Count of adoption status in sibling pairs",
+    x = NULL
+  ) +
+  ylim(0, 450) +
+  theme_classic()
 ```
 
 There are `r nrow(yo[which(yo$adopt == 1),])` adopted pairs and `r nrow(yo[which(yo$adopt == 0),])` non-adopted sibling pairs.
@@ -811,10 +884,24 @@ Here we compare between-sibling correlations in same-sex and opposite-sex pairs.
 
 Correlations are considered significantly different from one another if the confidence interval of one correlation does not include the point estimate for the other correlation.
 
-```{r}
+```{r sex-data, warning = F, message = F}
 # create same/opposite sex variable
 yo <- yo %>% 
   mutate(samesex = as.numeric(IDSEX_y == IDSEX_o))
+
+# histogram
+ggplot(yo, 
+       aes(factor(yo$samesex,
+                  levels = c(0, 1),
+                  labels = c("Different-Sex", "Same-Sex")))) + 
+  geom_bar(fill = c("#f1c232", "#710c0c")) + 
+  geom_text(stat='count', aes(label=..count..), vjust = -1) + 
+  labs(
+    title = "Count of sex similarity in sibling pairs",
+    x = NULL
+  ) +
+  ylim(0, 450) +
+  theme_classic()
 ```
 
 There are `r nrow(yo[which(yo$samesex == 1),])` same-sex and `r nrow(yo[which(yo$samesex == 0),])` opposite-sex sibling pairs.
@@ -1261,6 +1348,183 @@ as.data.frame(unclass(standardizedSolution(sibHA))) %>%
 semPaths(sibHA, what = "col", whatLabels = "est", intercepts = T)
 ```
 
+## Adoption status
+
+### Adoption status - Aggression AG
+
+```{r adopt-AG-full, warning = F, message = F, cache = T}
+# extract latent intercepts and slopes
+adoptAG <- lavPredict(sibAG) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+
+# scale all variables
+adoptAG <- scale(adoptAG, scale = F) %>% as.data.frame()
+
+# add adoption variable
+adoptAG$adopt <- factor(yo$adopt, levels = c(0,1), 
+                        labels = c("non-adoptive", "adoptive"))
+
+# moderation
+summary(lm(iy ~ io * adopt, data = adoptAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * adopt, data = adoptAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope ", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot
+plot_model(lm(iy ~ io * adopt, data = adoptAG), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Aggression intercept using Adoption status") +
+  theme_classic()
+```
+
+
+### Adoption status - Control CON
+
+```{r adopt-CON-full, warning = F, message = F, cache = T}
+# extract latent intercepts and slopes
+adoptCON <- lavPredict(sibCON) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+
+# scale all variables
+adoptCON <- scale(adoptCON, scale = F) %>% as.data.frame()
+
+# add adoption variable
+adoptCON$adopt <- factor(yo$adopt, levels = c(0,1), 
+                         labels = c("non-adoptive", "adoptive"))
+
+# moderation
+summary(lm(iy ~ io * adopt, data = adoptCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * adopt, data = adoptCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope ", digits = 3) %>% 
+  kable_styling()
+```
+
+### Adoption status - Harm Avoidance HA
+
+```{r adopt-HA-full, warning = F, message = F, cache = T}
+# extract latent intercepts and slopes
+adoptHA <- lavPredict(sibHA) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+
+# scale all variables
+adoptHA <- scale(adoptHA, scale = F) %>% as.data.frame()
+
+# add adoption variable
+adoptHA$adopt <- factor(yo$adopt, levels = c(0,1), 
+                        labels = c("non-adoptive", "adoptive"))
+
+# moderation
+summary(lm(iy ~ io * adopt, data = adoptHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * adopt, data = adoptHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope ", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot
+plot_model(lm(iy ~ io * adopt, data = adoptHA), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Harm Avoidance intercept using Adoption status") +
+  theme_classic()
+```
+
+## Sex similarity
+
+### Sex similarity - Aggression AG
+
+```{r sex-AG-full, warning=F, message=F, cache=T}
+# extract latent intercepts and slopes
+sexAG <- lavPredict(sibAG) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+
+# scale all variables
+sexAG <- scale(sexAG, scale = F) %>% as.data.frame()
+
+# add adoption variable
+sexAG$samesex <- factor(yo$samesex, levels = c(0,1), 
+                        labels = c("different-sex", "same-sex"))
+
+# moderation
+summary(lm(iy ~ io * samesex, data = sexAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * samesex, data = sexAG))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Aggression slope ", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot
+plot_model(lm(iy ~ io * samesex, data = sexAG), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Aggression intercept using Sex similarity") +
+  theme_classic()
+```
+
+### Sex similarity - Control CON
+
+```{r sex-CON-full, warning=F, message=F, cache=T}
+# extract latent intercepts and slopes
+sexCON <- lavPredict(sibCON) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+
+# scale all variables
+sexCON <- scale(sexCON, scale = F) %>% as.data.frame()
+
+# add adoption variable
+sexCON$samesex <- factor(yo$samesex, levels = c(0,1), 
+                        labels = c("different-sex", "same-sex"))
+
+# moderation
+summary(lm(iy ~ io * samesex, data = sexCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * samesex, data = sexCON))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Control slope ", digits = 3) %>% 
+  kable_styling()
+```
+
+### Sex similarity - Harm Avoidance
+
+```{r sex-HA-full, warning=F, message=F, cache=T}
+# extract latent intercepts and slopes
+sexHA <- lavPredict(sibHA) %>%
+  as.data.frame() %>%
+  select(iy, io, sy, so)
+
+# scale all variables
+sexHA <- scale(sexHA, scale = F) %>% as.data.frame()
+
+# add adoption variable
+sexHA$samesex <- factor(yo$samesex, levels = c(0,1), 
+                        labels = c("different-sex", "same-sex"))
+
+# moderation
+summary(lm(iy ~ io * samesex, data = sexHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance intercept ", digits = 3) %>% 
+  kable_styling()
+summary(lm(sy ~ so * samesex, data = sexHA))$coefficients %>%
+  knitr::kable(caption = "Predicting younger siblings's Harm Avoidance slope ", digits = 3) %>% 
+  kable_styling()
+
+# interaction plot
+plot_model(lm(sy ~ so * samesex, data = sexHA), 
+           type = "int",
+           axis.title = c("Older sibling", "Younger sibling"),
+           title = "Harm Avoidance slope using Sex similarity") +
+  theme_classic()
+```
+
 ## Age gap
 
 Here, we examined whether a smaller age gap between siblings would result in higher correlated change patterns compared to siblings who are further apart in age.
@@ -1275,9 +1539,9 @@ yo$gap %>%
 
 # histogram
 ggplot(data = yo, aes(gap)) +
-  geom_histogram(binwidth = 0.1) + 
+  geom_histogram(binwidth = 0.1, fill = "#710c0c") + 
   geom_vline(xintercept = mean(yo$gap, na.rm = T),
-             color = "red") +
+             color = "#f1c232", size = 1) +
   annotate("text", 
            label = paste0("Mean = ", round(mean(yo$gap, na.rm = T), 2),
                           ", SD = ",round(sd(yo$gap, na.rm = T), 2)),
@@ -1704,9 +1968,9 @@ ninf <- ninf %>%
 
 ```{r FAM-plot}
 ggplot(data = lei, aes(FAM)) +
-  geom_histogram(binwidth = 1) + 
+  geom_histogram(binwidth = 1, fill = "#710c0c") + 
   geom_vline(xintercept = mean(lei$FAM, na.rm = T),
-             color = "red") +
+             color = "#f1c232", size = 1) +
   annotate("text", 
            label = paste0("Mean = ", round(mean(lei$FAM, na.rm = T), 2),
                           ", SD = ",round(sd(lei$FAM, na.rm = T), 2)),
@@ -1725,9 +1989,9 @@ plot(likert(fam))
 
 ```{r INF-plot}
 ggplot(data = lei, aes(INF)) +
-  geom_histogram(binwidth = 1) + 
+  geom_histogram(binwidth = 1, fill = "#710c0c") + 
   geom_vline(xintercept = mean(lei$INF, na.rm = T),
-             color = "red") +
+             color = "#f1c232", size = 1) +
   annotate("text", 
            label = paste0("Mean = ", round(mean(lei$INF, na.rm = T), 2),
                           ", SD = ",round(sd(lei$INF, na.rm = T), 2)),
@@ -1747,9 +2011,9 @@ plot(likert(inf))
 
 ```{r NINF-plot}
 ggplot(data = lei, aes(NINF)) +
-  geom_histogram(binwidth = 1) + 
+  geom_histogram(binwidth = 1, fill = "#710c0c") + 
   geom_vline(xintercept = mean(lei$NINF, na.rm = T),
-             color = "red") +
+            color = "#f1c232", size = 1) +
   annotate("text", 
            label = paste0("Mean = ", round(mean(lei$NINF, na.rm = T), 2),
                           ", SD = ",round(sd(lei$NINF, na.rm = T), 2)),
@@ -1768,9 +2032,9 @@ In the following analyses, we used the number of family-related events (as repor
 
 ```{r lei_shared, warning = F}
 ggplot(data = yo, aes(lei_shared)) +
-  geom_histogram(binwidth = 1) + 
+  geom_histogram(binwidth = 1, fill = "#710c0c") + 
   geom_vline(xintercept = mean(yo$lei_shared, na.rm = T),
-             color = "red") +
+             color = "#f1c232", size = 1) +
   annotate("text", 
            label = paste0("Mean = ", round(mean(yo$lei_shared, na.rm = T), 2),
                           ", SD = ",round(sd(yo$lei_shared, na.rm = T), 2)),
